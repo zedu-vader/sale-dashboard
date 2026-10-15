@@ -19,7 +19,7 @@ There is no sign-up. Every route except `/login`, `/setup`, `/request-access` an
 1. An admin invites someone at `/invites` (emails a 9-character setup code), or a row is added to the `Invite` table by hand.
 2. The invitee enters the code at `/setup`, then sets their name, email and password at `/setup/profile` and is signed in.
 3. People without an invite use `/request-access`, which emails every admin and appears on `/invites`.
-4. Google sign-in only works for emails that already have an account.
+4. "Continue with Google" signs in the account with that email, or creates a new one with the Member role. Admins are only created through invites.
 
 Create the first admin by inserting an invite with the `ADMIN` role, then open `/setup`:
 

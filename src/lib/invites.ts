@@ -14,7 +14,7 @@ export const INVITE_TTL_DAYS = 7;
 
 export type InviteStatus = "PENDING" | "ACCEPTED" | "EXPIRED" | "REVOKED";
 
-/** Shape returned by /api/invites and consumed by the invites page. Token only while still usable. */
+/** Shape returned by /api/invites. The code itself is only included in the response to creating an invite. */
 export type InviteDTO = {
   id: string;
   email: string | null;
@@ -30,14 +30,17 @@ export type InviteDTO = {
 
 export type AccessRequestDTO = { id: string; name: string; email: string; message: string | null; createdAt: string };
 
-export function toInviteDTO(i: Invite & { invitedBy?: { name: string | null; email: string | null } | null }): InviteDTO {
+export function toInviteDTO(
+  i: Invite & { invitedBy?: { name: string | null; email: string | null } | null },
+  opts: { withToken?: boolean } = {},
+): InviteDTO {
   const status = inviteStatus(i);
   return {
     id: i.id,
     email: i.email,
     role: i.role,
     status,
-    token: status === "PENDING" ? i.token : null,
+    token: opts.withToken && status === "PENDING" ? i.token : null,
     uses: i.uses,
     maxUses: i.maxUses,
     expiresAt: i.expiresAt.toISOString(),

@@ -15,11 +15,12 @@ export async function GET() {
   if (auth instanceof NextResponse) return auth;
 
   const invites = await prisma.invite.findMany({
+    where: { email: { not: null } },
     orderBy: { createdAt: "desc" },
     take: 200,
     include: { invitedBy: { select: { name: true, email: true } } },
   });
-  return NextResponse.json(invites.map(toInviteDTO));
+  return NextResponse.json(invites.map((i) => toInviteDTO(i)));
 }
 
 export async function POST(req: Request) {
@@ -57,5 +58,5 @@ export async function POST(req: Request) {
   await prisma.accessRequest.updateMany({ where: { email, status: "PENDING" }, data: { status: "INVITED", handledAt: new Date() } });
 
   const emailSent = await sendMail(inviteEmail({ to: email, token: invite.token, inviterName: auth.user.name, expiresAt }));
-  return NextResponse.json({ invite: toInviteDTO(invite), emailSent }, { status: 201 });
+  return NextResponse.json({ invite: toInviteDTO(invite, { withToken: true }), emailSent }, { status: 201 });
 }

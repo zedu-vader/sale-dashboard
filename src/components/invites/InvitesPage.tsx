@@ -62,23 +62,13 @@ export function InvitesPage() {
   const revoke = (i: InviteDTO) => act(i.id, () => apiFetch(`/api/invites/${i.id}`, { method: "DELETE" }), "Invite revoked.");
   const dismiss = (r: AccessRequestDTO) => act(r.id, () => apiFetch(`/api/access-requests/${r.id}`, { method: "DELETE" }), "Request dismissed.");
 
-  async function copy(i: InviteDTO) {
-    if (!i.token) return;
-    try {
-      await navigator.clipboard.writeText(i.token);
-      setNotice("Code copied.");
-    } catch {
-      setNotice(`Code: ${i.token}`);
-    }
-  }
-
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-5 pb-10">
       <PageHeader
         className="!px-0"
         title="Invites"
         count={invites?.length}
-        description="Access is invite-only. Invite people by email and review access requests."
+        description="Invite your team to the Zedu Sales Dashboard."
         actions={
           <Button icon={<MailPlus aria-hidden />} onClick={() => openModal()}>
             Invite people
@@ -110,7 +100,7 @@ export function InvitesPage() {
             </Button>
           </div>
         ) : (
-          <InviteTable invites={invites} busyId={busyId} onResend={resend} onRevoke={revoke} onCopy={copy} />
+          <InviteTable invites={invites} busyId={busyId} onResend={resend} onRevoke={revoke} />
         )}
       </Card>
 

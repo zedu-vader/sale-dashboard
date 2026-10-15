@@ -9,7 +9,7 @@ import { GoogleButton } from "./GoogleButton";
 import { useAuthRequest } from "./useAuthRequest";
 
 const OAUTH_ERRORS: Record<string, string> = {
-  AccessDenied: "That Google account doesn't have access. Request access, or ask an admin to invite you.",
+  AccessDenied: "That Google account can't sign in. It may be deactivated or have an unverified email. Contact an admin.",
 };
 
 type Props = { next: string; oauthError?: string };

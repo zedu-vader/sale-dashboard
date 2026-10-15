@@ -5,11 +5,16 @@ import { useEffect, useState, type FormEvent } from "react";
 import { FormError } from "@/components/auth/FormError";
 import { useAuthRequest } from "@/components/auth/useAuthRequest";
 import { Modal } from "@/components/ui/Modal";
-import { Button, Input, SegmentedControl } from "@/components/zedu";
+import { Button, Input, cx } from "@/components/zedu";
 import { normalizeEmail } from "@/lib/auth/validation";
 import type { InviteDTO } from "@/lib/invites";
 
 type Role = InviteDTO["role"];
+const ROLES: { value: Role; label: string }[] = [
+  { value: "MEMBER", label: "Member" },
+  { value: "ADMIN", label: "Admin" },
+];
+
 type Created = { invite: InviteDTO; emailSent: boolean };
 
 type Props = {
@@ -93,15 +98,25 @@ export function InviteModal({ open, onClose, onCreated, initialEmail = "" }: Pro
           />
           <div className="flex flex-col gap-1.5">
             <span className="text-z-caption font-medium text-z-fg-secondary">Role</span>
-            <SegmentedControl
-              label="Role"
-              value={role}
-              onChange={setRole}
-              options={[
-                { value: "MEMBER", label: "Member" },
-                { value: "ADMIN", label: "Admin" },
-              ]}
-            />
+            <div role="radiogroup" aria-label="Role" className="grid grid-cols-2 gap-2">
+              {ROLES.map((r) => (
+                <button
+                  key={r.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={role === r.value}
+                  onClick={() => setRole(r.value)}
+                  className={cx(
+                    "z-focus h-9 rounded-z-md border text-z-body transition-colors duration-150",
+                    role === r.value
+                      ? "border-z-line-strong bg-z-surface font-medium text-z-fg shadow-z-xs"
+                      : "border-transparent bg-z-sunken text-z-fg-muted hover:text-z-fg-secondary",
+                  )}
+                >
+                  {r.label}
+                </button>
+              ))}
+            </div>
             {role === "ADMIN" && <span className="text-z-caption text-z-fg-muted">Admins can invite people and receive access requests.</span>}
           </div>
           <div className="flex justify-end gap-2">
