@@ -17,7 +17,12 @@ export default async function TasksPage() {
   const overdue = INITIAL_TASKS.some((t) => t.dueTone === "overdue" && t.status !== "Completed");
 
   return (
-    <AppShell user={{ name, email: session.user.email, image: session.user.image }} openTaskCount={open} unread={overdue}>
+    <AppShell
+      user={{ name, email: session.user.email, image: session.user.image }}
+      openTaskCount={open}
+      unread={overdue}
+      active="Tasks"
+    >
       <TasksBoard />
     </AppShell>
   );
