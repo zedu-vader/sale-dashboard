@@ -33,7 +33,7 @@ export function AddLeadModal({ open, onClose, onSubmit }: AddLeadModalProps) {
           <label className="grid gap-[7px] text-xs font-semibold text-[#4f4959]">Lead type<select className="h-[42px] rounded-[7px] border border-[#e1dce8] bg-white px-3 font-normal text-[#282231] outline-none focus:border-[#9579d8] focus:shadow-[0_0_0_3px_#f1ecfc]" name="type"><option>Individual</option><option>Business</option></select></label>
           <div className="mt-[5px] flex justify-end gap-[9px]">
             <button type="button" className="min-h-10 rounded-[7px] border border-[#e1dce8] bg-transparent px-4 text-inherit hover:bg-[#f7f5fa]" onClick={onClose}>Cancel</button>
-            <button type="submit" className="inline-flex min-h-10 items-center justify-center gap-2 whitespace-nowrap rounded-[7px] border-0 bg-zedu-600 px-[17px] text-[13px] font-semibold text-white shadow-[0_5px_12px_rgb(75_32_184_/_15%)] hover:bg-zedu-700">Add lead</button>
+            <button type="submit" className="inline-flex min-h-10 items-center justify-center gap-2 whitespace-nowrap rounded-[7px] border-0 bg-[#4b20b8] px-[17px] text-[13px] font-semibold text-white shadow-[0_5px_12px_rgb(75_32_184_/_15%)] hover:bg-[#3c169d]">Add lead</button>
           </div>
         </form>
       </section>

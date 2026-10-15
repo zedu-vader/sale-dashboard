@@ -24,7 +24,7 @@ export function Sidebar() {
         {navItems.map(({ label, icon: Icon, active }) => (
           <button
             type="button"
-            className={`flex min-h-[43px] w-full items-center gap-[13px] rounded-[9px] border-0 px-[13px] text-left text-sm font-medium transition-colors max-[1080px]:justify-center max-[1080px]:px-0 max-[760px]:min-h-10 max-[760px]:w-[42px] max-[760px]:min-w-[42px] ${active ? "bg-zedu-100 font-semibold text-zedu-600 hover:bg-[#ece4fb]" : "bg-transparent text-[#494455] hover:bg-[#f7f5fb] hover:text-zedu-600"}`}
+            className={`flex min-h-[43px] w-full items-center gap-[13px] rounded-[9px] border-0 px-[13px] text-left text-sm font-medium transition-colors max-[1080px]:justify-center max-[1080px]:px-0 max-[760px]:min-h-10 max-[760px]:w-[42px] max-[760px]:min-w-[42px] ${active ? "bg-[#eee7fb] font-semibold text-[#4b20b8] hover:bg-[#ece4fb]" : "bg-transparent text-[#494455] hover:bg-[#f7f5fb] hover:text-[#4b20b8]"}`}
             key={label}
             aria-current={active ? "page" : undefined}
           >
@@ -34,7 +34,7 @@ export function Sidebar() {
         ))}
       </nav>
       <div className="mt-auto flex items-center gap-2.5 border-t border-[#f1eef5] px-2 pt-3.5 max-[1080px]:justify-center max-[1080px]:px-0 max-[760px]:hidden">
-        <span className="grid h-[34px] w-[34px] shrink-0 place-items-center rounded-full bg-zedu-600 text-[11px] font-bold text-white">AO</span>
+        <span className="grid h-[34px] w-[34px] shrink-0 place-items-center rounded-full bg-[#4b20b8] text-[11px] font-bold text-white">AO</span>
         <span className="grid gap-px max-[1080px]:hidden">
           <strong className="text-xs">Agnes</strong>
           <small className="text-[10px] text-[#777386]">Sales Team</small>
