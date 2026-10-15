@@ -193,3 +193,12 @@ model Task {
 
   @@index([dueAt])
 }
+
+// Single row (id "default"): SHA-hashed bootstrap/admin key, set or rotated via /api/admin/master-key.
+model MasterKey {
+  id          String   @id @default("default")
+  keyHash     String
+  version     Int      @default(1)
+  rotatedAt   DateTime @default(now())
+  rotatedById String?
+}

@@ -9,7 +9,7 @@ export const REFRESH_TTL_SECONDS = 30 * 24 * 60 * 60;
 export const SETUP_TTL_SECONDS = 30 * 60;
 
 export const PUBLIC_PAGES = ["/login", "/setup", "/request-access"];
-export const PUBLIC_API_PREFIXES = ["/api/auth/", "/api/health"];
+export const PUBLIC_API_PREFIXES = ["/api/auth/", "/api/admin/", "/api/health"];
 
 export type Role = "ADMIN" | "MEMBER";
 
