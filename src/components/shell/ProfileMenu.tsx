@@ -1,7 +1,7 @@
 "use client";
 
 import { LogOut, Moon, Sun } from "lucide-react";
-import { signOut } from "next-auth/react";
+import { signOut } from "@/lib/auth/client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { useDismiss } from "@/components/ui/useDismiss";
