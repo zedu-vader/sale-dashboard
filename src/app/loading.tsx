@@ -1,31 +1,35 @@
-// Skeleton that mirrors the dashboard layout (§7.10: never a spinner for whole cards).
+// Skeleton that mirrors the dashboard shell: sidebar, top bar, header, six KPI cards and two panels.
 export default function Loading() {
-  const card = "rounded-xl border border-line bg-surface p-[22px] shadow-card max-lg:p-[18px] max-sm:p-4";
+  const block = "animate-pulse rounded-z-md bg-z-sunken";
+  const card = "rounded-z-xl border border-z-line bg-z-surface shadow-z-sm";
   return (
-    <div aria-busy="true" aria-label="Loading dashboard" className="min-h-screen px-8 py-7 max-lg:px-6 max-sm:px-4 md:ml-[72px] lg:ml-[248px]">
-      <div className="mx-auto max-w-content">
-        <div className="skeleton mb-2 h-8 w-72 max-w-full" />
-        <div className="skeleton mb-6 h-5 w-96 max-w-full" />
-        <div className="mb-5 grid grid-cols-2 gap-5 max-lg:gap-4 max-sm:gap-3 xl:grid-cols-4">
-          {Array.from({ length: 4 }, (_, i) => (
-            <div key={i} className={card}>
-              <div className="flex items-center gap-3.5">
-                <div className="skeleton h-[46px] w-[46px] rounded-[13px] max-sm:h-9 max-sm:w-9" />
-                <div className="skeleton h-4 w-24" />
+    <div aria-busy="true" aria-label="Loading dashboard" className="zedu flex h-dvh overflow-hidden bg-z-surface">
+      <div className="hidden w-16 shrink-0 border-r border-z-line bg-z-app md:block xl:w-[248px]" />
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="h-14 shrink-0 border-b border-z-line" />
+        <div className="flex flex-col gap-4 p-6 max-sm:px-4">
+          <div className={`${block} h-7 w-40`} />
+          <div className={`${block} mb-3 h-5 w-80 max-w-full`} />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }, (_, i) => (
+              <div key={i} className={`${card} flex h-20 items-center gap-3 px-5`}>
+                <div className={`${block} size-10 rounded-full`} />
+                <div className="flex flex-col gap-2">
+                  <div className={`${block} h-3.5 w-24`} />
+                  <div className={`${block} h-6 w-16`} />
+                </div>
               </div>
-              <div className="skeleton mb-1.5 mt-3.5 h-9 w-20" />
-              <div className="skeleton h-5 w-32" />
-            </div>
-          ))}
-        </div>
-        <div className="grid gap-5 max-lg:gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
-          <div className={card}>
-            <div className="skeleton mb-[18px] h-6 w-36" />
-            <div className="skeleton h-[250px]" />
+            ))}
           </div>
-          <div className={card}>
-            <div className="skeleton mb-[18px] h-6 w-28" />
-            {Array.from({ length: 4 }, (_, i) => <div key={i} className="skeleton mb-3 h-11" />)}
+          <div className="grid gap-4 lg:grid-cols-2">
+            {Array.from({ length: 2 }, (_, i) => (
+              <div key={i} className={`${card} flex h-[360px] flex-col gap-4 p-5`}>
+                <div className={`${block} h-5 w-44`} />
+                {Array.from({ length: 5 }, (_, j) => (
+                  <div key={j} className={`${block} h-9`} />
+                ))}
+              </div>
+            ))}
           </div>
         </div>
       </div>

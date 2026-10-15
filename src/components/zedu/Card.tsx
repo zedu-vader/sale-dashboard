@@ -83,7 +83,7 @@ export function KpiCard({ label, value, delta, icon, sparkline, plain, className
   return (
     <div
       className={cx(
-        "flex min-h-20 gap-3 bg-z-surface px-5 py-2.5",
+        "flex min-h-20 gap-3 bg-z-surface px-5 py-[9px]",
         icon ? "items-center" : "items-end",
         !plain && "rounded-z-xl border border-z-line shadow-z-sm",
         className,
