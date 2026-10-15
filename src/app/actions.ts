@@ -8,6 +8,7 @@ export async function toggleTask(id: string, done: boolean) {
   const session = await getSession();
   if (!session) throw new Error("Unauthorized");
 
-  await prisma.task.update({ where: { id }, data: { done } });
-  revalidatePath("/");
+  await prisma.task.update({ where: { id }, data: { done, completedAt: done ? new Date() : null } });
+  // Tasks show on the dashboard and on lead profiles.
+  revalidatePath("/", "layout");
 }

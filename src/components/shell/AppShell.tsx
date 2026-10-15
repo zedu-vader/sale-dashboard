@@ -1,28 +1,73 @@
 "use client";
 
-import { Plus, X } from "lucide-react";
+// App shell (Figma 16817:18843, 16842:21692): ZEDU sidebar + top bar around every signed-in page.
+// Sidebar: Expanded 248px at ≥1280px, Collapsed 64px rail at 768–1279px (the top-bar toggle overrides
+// either), and a drawer below 768px.
+
+import { CircleHelp, Contact, LayoutDashboard, Phone, Search as SearchIcon, SquareCheck, UserRound, X } from "lucide-react";
+import { signOut } from "@/lib/auth/client";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState, useTransition, type ReactNode } from "react";
-import type { RangeKey } from "@/lib/range";
-import { BottomTabs } from "./BottomTabs";
-import { RangeContext } from "./RangeContext";
-import { Sidebar } from "./Sidebar";
-import { TopBar } from "./TopBar";
+import { useEffect, useState, type ReactNode } from "react";
+import { initialsOf } from "@/lib/status";
+import {
+  Dropdown,
+  IconButton,
+  NavItem,
+  NavSection,
+  NewMenu,
+  Search,
+  Sidebar,
+  SidebarDivider,
+  TopBar,
+  UserMenu,
+  UserTrigger,
+  WorkspaceSwitcher,
+} from "@/components/zedu";
+
+type User = { name: string; email?: string | null; image?: string | null };
 
 type Props = {
-  user: { name: string; email?: string | null; image?: string | null };
-  range: { key: RangeKey; period: string };
-  newLeadCount: number;
-  target: { done: number; goal: number };
+  user: User;
+  /** Open tasks due today or overdue, shown on the Tasks nav item. */
+  openTaskCount: number;
+  /** Shows the red dot on the notifications bell. */
+  unread: boolean;
   children: ReactNode;
 };
 
-// App shell, Zedu Design System §5: sidebar (248px / 72px rail / drawer) + sticky top bar + mobile tab bar.
-export function AppShell({ user, range, newLeadCount, target, children }: Props) {
-  const router = useRouter();
+// Calls and Contacts pages aren't built yet, so those items don't navigate.
+const NAV = [
+  { label: "Dashboard", href: "/", icon: <LayoutDashboard aria-hidden /> },
+  { label: "Leads", href: "/leads", icon: <UserRound aria-hidden /> },
+  { label: "Calls", href: "#", icon: <Phone aria-hidden /> },
+  { label: "Tasks", href: "/tasks", icon: <SquareCheck aria-hidden />, tasks: true },
+  { label: "Contacts", href: "#", icon: <Contact aria-hidden /> },
+];
+
+function useWideScreen() {
+  const [wide, setWide] = useState(true);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1280px)");
+    const sync = () => setWide(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+  return wide;
+}
+
+const isActive = (href: string, pathname: string) =>
+  href !== "#" && (href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`));
+
+export function AppShell({ user, openTaskCount, unread, children }: Props) {
+  const wide = useWideScreen();
   const pathname = usePathname();
+  const router = useRouter();
+  // null = follow the viewport; the top-bar toggle pins it until the viewport class changes.
+  const [pinned, setPinned] = useState<boolean | null>(null);
   const [drawer, setDrawer] = useState(false);
-  const [pending, startTransition] = useTransition();
+  useEffect(() => setPinned(null), [wide]);
+  const collapsed = pinned ?? !wide;
 
   useEffect(() => {
     if (!drawer) return;
@@ -31,60 +76,92 @@ export function AppShell({ user, range, newLeadCount, target, children }: Props)
     return () => document.removeEventListener("keydown", onKey);
   }, [drawer]);
 
-  function changeRange(key: RangeKey) {
-    startTransition(() => router.push(`${pathname}?range=${key}`, { scroll: false }));
-  }
+  const initials = initialsOf(user.name);
+
+  const sidebar = (rail: boolean, onNavigate?: () => void) => (
+    <Sidebar
+      collapsed={rail}
+      className="h-full"
+      header={
+        <>
+          <WorkspaceSwitcher workspace="Zedu" subtitle="Marketing dashboard" collapsed={rail} />
+          {rail ? (
+            <IconButton label="Search" className="w-10" onClick={() => document.querySelector<HTMLInputElement>('input[name="q"]')?.focus()}>
+              <SearchIcon aria-hidden />
+            </IconButton>
+          ) : (
+            <Search size="sm" shortcut="/" className="w-full shrink-0" />
+          )}
+        </>
+      }
+      footer={
+        <>
+          <NavItem label="Help center" href="#" icon={<CircleHelp aria-hidden />} />
+          <SidebarDivider />
+          <Dropdown
+            side="top"
+            className={rail ? undefined : "w-full"}
+            trigger={(p) => (
+              <UserTrigger name={user.name} email={user.email} initials={initials} image={user.image} collapsed={rail} {...p} />
+            )}
+          >
+            <UserMenu name={user.name} subtitle={user.email ?? undefined} onLogOut={() => signOut()} />
+          </Dropdown>
+        </>
+      }
+    >
+      <NavSection label="Sales">
+        {NAV.map((n) => (
+          <NavItem
+            key={n.label}
+            label={n.label}
+            href={n.href}
+            icon={n.icon}
+            active={isActive(n.href, pathname)}
+            count={n.tasks && openTaskCount > 0 ? openTaskCount : undefined}
+            onClick={onNavigate}
+          />
+        ))}
+      </NavSection>
+    </Sidebar>
+  );
 
   return (
-    <RangeContext.Provider value={{ ...range, change: changeRange }}>
-    <div className="min-h-screen md:grid md:grid-cols-[72px_minmax(0,1fr)] lg:grid-cols-[248px_minmax(0,1fr)]">
-      <aside className="sticky top-0 hidden h-screen border-r border-line md:block">
-        <Sidebar newLeadCount={newLeadCount} target={target} />
-      </aside>
+    <div className="zedu flex h-dvh overflow-hidden bg-z-surface">
+      <div className="hidden md:block">{sidebar(collapsed)}</div>
 
-      <div className="flex min-w-0 flex-col">
-        <TopBar user={user} onOpenMenu={() => setDrawer(true)} />
-        {/* Values crossfade while a new range loads (§8: data animations don't replay). */}
-        <main
-          aria-busy={pending}
-          className={`px-8 pb-10 pt-7 transition-opacity duration-200 max-lg:px-6 max-sm:px-4 max-sm:pt-5 max-md:pb-[calc(64px+env(safe-area-inset-bottom)+88px)] ${pending ? "opacity-60" : ""}`}
-        >
-          <div className="mx-auto max-w-content">{children}</div>
-        </main>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <TopBar
+          unread={unread}
+          onToggleSidebar={() => setPinned(!collapsed)}
+          onOpenMenu={() => setDrawer(true)}
+          newMenu={<NewMenu onAddLead={() => router.push("/leads?new=1")} onImport={() => {}} />}
+        />
+        <main className="min-h-0 flex-1 overflow-y-auto">{children}</main>
       </div>
-
-      {/* Mobile: floating Add lead button + bottom tabs */}
-      <button
-        aria-label="Add lead"
-        className="fixed bottom-[calc(64px+env(safe-area-inset-bottom)+16px)] right-4 z-30 grid h-14 w-14 place-items-center rounded-full bg-gradient-brand text-white shadow-brand md:hidden"
-      >
-        <Plus size={24} strokeWidth={2.5} />
-      </button>
-      <BottomTabs onMore={() => setDrawer(true)} />
 
       {/* Mobile drawer */}
       <div className={`fixed inset-0 z-50 md:hidden ${drawer ? "" : "pointer-events-none"}`} aria-hidden={!drawer}>
         <div
           onClick={() => setDrawer(false)}
-          className={`absolute inset-0 bg-[rgba(13,11,31,.5)] backdrop-blur-[4px] transition-opacity duration-400 ${drawer ? "opacity-100" : "opacity-0"}`}
+          className={`absolute inset-0 bg-z-inverse/40 transition-opacity duration-200 ${drawer ? "opacity-100" : "opacity-0"}`}
         />
         <div
           role="dialog"
           aria-modal="true"
           aria-label="Menu"
-          className={`absolute inset-y-0 left-0 w-[280px] max-w-[85vw] shadow-modal transition-transform duration-400 ease-out ${drawer ? "translate-x-0" : "-translate-x-full"}`}
+          className={`absolute inset-y-0 left-0 shadow-z-lg transition-transform duration-200 ease-out ${drawer ? "translate-x-0" : "-translate-x-full"}`}
         >
           {drawer && (
             <>
-              <button onClick={() => setDrawer(false)} aria-label="Close menu" className="absolute right-3 top-5 z-10 grid h-11 w-11 place-items-center rounded-lg text-ink-muted">
-                <X size={20} />
-              </button>
-              <Sidebar newLeadCount={newLeadCount} target={target} mode="drawer" onNavigate={() => setDrawer(false)} />
+              <IconButton label="Close menu" className="absolute right-2 top-2 z-10" onClick={() => setDrawer(false)}>
+                <X aria-hidden />
+              </IconButton>
+              {sidebar(false, () => setDrawer(false))}
             </>
           )}
         </div>
       </div>
     </div>
-    </RangeContext.Provider>
   );
 }

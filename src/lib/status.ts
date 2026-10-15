@@ -1,18 +1,22 @@
-import type { LeadStatus, LostReason } from "@prisma/client";
+import type { CallOutcome, LeadStatus, LeadType, LostReason, TaskType } from "@prisma/client";
+import type { Stage, TaskKind } from "@/components/zedu";
 
-// Lead pipeline stages and pill styles, Zedu Design System §7.6.
-// Dark mode keeps the background opacity and lightens the text to the semantic dark token.
-export const STAGES: Record<LeadStatus, { label: string; order: number; pill: string }> = {
-  NEW: { label: "New", order: 1, pill: "bg-indigo-100 text-[#4b2bd6] dark:bg-brand-soft dark:text-[#b9a8ff]" },
-  CONTACTED: { label: "Contacted", order: 2, pill: "bg-[rgba(107,104,144,.12)] text-[#4a4770] dark:bg-[rgba(161,157,201,.14)] dark:text-[#c3c0e3]" },
-  CONNECTED: { label: "Connected", order: 3, pill: "bg-[rgba(46,144,250,.12)] text-[#1a6fd1] dark:text-[#53b1fd]" },
-  INTERESTED: { label: "Interested", order: 4, pill: "bg-[rgba(18,183,106,.12)] text-[#0b8a50] dark:text-[#32d583]" },
-  FOLLOW_UP: { label: "Follow up", order: 5, pill: "bg-[rgba(245,165,36,.15)] text-[#b4740a] dark:text-[#fdb022]" },
-  QUALIFIED: { label: "Qualified", order: 6, pill: "bg-[rgba(109,77,255,.14)] text-[#5534e0] dark:bg-[rgba(157,133,255,.18)] dark:text-[#b9a8ff]" },
-  PROPOSAL: { label: "Proposal", order: 7, pill: "bg-coral-100 text-[#c4502f] dark:bg-[rgba(255,122,89,.15)] dark:text-[#ff8f73]" },
-  WON: { label: "Won", order: 8, pill: "bg-gradient-brand text-white" },
-  LOST: { label: "Lost", order: 9, pill: "bg-[rgba(240,68,97,.12)] text-[#d0284a] dark:text-[#f97066]" },
+// Lead pipeline stages. `stage` picks the ZEDU status pill colour; `label` is the wording on screen
+// (the Leads designs say Follow-up, Converted and Not interested for FOLLOW_UP, WON and LOST).
+export const STAGES: Record<LeadStatus, { stage: Stage; label: string; order: number }> = {
+  NEW: { stage: "New", label: "New", order: 1 },
+  CONTACTED: { stage: "Contacted", label: "Contacted", order: 2 },
+  CONNECTED: { stage: "Connected", label: "Connected", order: 3 },
+  INTERESTED: { stage: "Interested", label: "Interested", order: 4 },
+  FOLLOW_UP: { stage: "Follow up", label: "Follow-up", order: 5 },
+  QUALIFIED: { stage: "Qualified", label: "Qualified", order: 6 },
+  PROPOSAL: { stage: "Proposal", label: "Proposal", order: 7 },
+  WON: { stage: "Won", label: "Converted", order: 8 },
+  LOST: { stage: "Lost", label: "Not interested", order: 9 },
 };
+
+/** Statuses in pipeline order, for menus and filters. */
+export const STATUS_ORDER = (Object.keys(STAGES) as LeadStatus[]).sort((a, b) => STAGES[a].order - STAGES[b].order);
 
 export const LOST_REASONS: Record<LostReason, string> = {
   NOT_INTERESTED: "Not interested",
@@ -21,3 +25,34 @@ export const LOST_REASONS: Record<LostReason, string> = {
   WENT_WITH_COMPETITOR: "Went with competitor",
   OTHER: "Other",
 };
+
+export const CALL_OUTCOMES: Record<CallOutcome, string> = {
+  CONNECTED: "Connected",
+  NO_ANSWER: "No answer",
+  NOT_INTERESTED: "Not interested",
+  OTHER: "Other",
+};
+
+export const LEAD_TYPES: Record<LeadType, { label: string; kind: "individual" | "business" }> = {
+  INDIVIDUAL: { label: "Individual", kind: "individual" },
+  BUSINESS: { label: "Business", kind: "business" },
+};
+
+export const TASK_TYPES: Record<TaskType, { label: string; kind: TaskKind }> = {
+  CALL: { label: "Call", kind: "call" },
+  EMAIL: { label: "Email", kind: "email" },
+  FOLLOW_UP: { label: "Follow-up", kind: "follow-up" },
+  MEETING: { label: "Meeting", kind: "meeting" },
+  OTHER: { label: "Other", kind: "other" },
+};
+
+/** LD-1042 */
+export const leadCode = (code: number) => `LD-${code}`;
+
+export const initialsOf = (name: string | null | undefined) =>
+  (name ?? "")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]!.toUpperCase())
+    .join("") || "?";

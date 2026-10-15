@@ -4,7 +4,7 @@
 
 import { ChevronDown, Plus } from "lucide-react";
 import Link from "next/link";
-import { createContext, useContext, useId, useState, type ReactNode } from "react";
+import { createContext, forwardRef, useContext, useId, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { CountBadge } from "./Badges";
 import { cx } from "./cx";
 
@@ -28,7 +28,7 @@ export function Sidebar({ collapsed = false, header, footer, className, children
       <nav
         aria-label="Main"
         className={cx(
-          "relative flex h-full shrink-0 flex-col gap-4 overflow-y-auto border-r border-z-line bg-z-app p-3",
+          "relative flex h-full shrink-0 flex-col gap-4 overflow-y-auto overflow-x-hidden border-r border-z-line bg-z-app p-3",
           collapsed ? "w-16 items-center" : "w-[248px]",
           className,
         )}
@@ -77,7 +77,7 @@ export function NavItem({ icon, label, href, onClick, active, count }: NavItemPr
   );
   const shared = { className, title: collapsed ? label : undefined, "aria-current": active ? ("page" as const) : undefined };
   return href ? (
-    <Link href={href} {...shared}>
+    <Link href={href} onClick={onClick} {...shared}>
       {content}
     </Link>
   ) : (
@@ -140,19 +140,36 @@ export function NavSection({ label, onAdd, defaultOpen = true, children }: NavSe
 
 type BulkAction = { label: string; icon?: ReactNode; onClick: () => void };
 
+const bulkActionClass =
+  "z-focus flex h-8 items-center gap-1.5 whitespace-nowrap rounded-z-md px-2.5 text-z-small font-medium text-z-fg-on-primary transition-colors duration-150 hover:bg-white/10 [&_svg]:size-4";
+
+/** A button inside BulkActionBar, for actions that open a menu (wrap it in a Dropdown). */
+export const BulkActionButton = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLButtonElement> & { icon?: ReactNode; active?: boolean }>(
+  function BulkActionButton({ icon, active, className, children, type = "button", ...rest }, ref) {
+    return (
+      <button ref={ref} type={type} className={cx(bulkActionClass, active && "bg-white/15", className)} {...rest}>
+        {icon}
+        {children}
+      </button>
+    );
+  },
+);
+
 type BulkActionBarProps = {
   /** e.g. 3 → "3 selected". */
   count: number;
-  actions: BulkAction[];
+  /** Simple click actions. For actions that open a menu, pass BulkActionButtons as children instead. */
+  actions?: BulkAction[];
   /** Clears the selection. */
   onDiscard: () => void;
   /** Fixed bottom-centre, 24px above the viewport edge. */
   floating?: boolean;
   className?: string;
+  children?: ReactNode;
 };
 
 /** Inverse bar shown when table rows are selected: count, actions, and Discard. */
-export function BulkActionBar({ count, actions, onDiscard, floating = true, className }: BulkActionBarProps) {
+export function BulkActionBar({ count, actions = [], onDiscard, floating = true, className, children }: BulkActionBarProps) {
   return (
     <div
       role="toolbar"
@@ -166,18 +183,13 @@ export function BulkActionBar({ count, actions, onDiscard, floating = true, clas
       <span aria-live="polite" className="whitespace-nowrap text-z-small font-normal text-z-fg-on-inverse-muted">
         {count} selected
       </span>
-      <span aria-hidden className="ml-1.5 h-4 w-px bg-z-line-inverse" />
+      <span aria-hidden className="mx-1.5 h-4 w-px bg-z-line-inverse" />
       {actions.map((a) => (
-        <button
-          key={a.label}
-          type="button"
-          onClick={a.onClick}
-          className="z-focus flex h-8 items-center gap-1.5 whitespace-nowrap rounded-z-md px-2.5 text-z-small font-medium text-z-fg-on-primary transition-colors duration-150 hover:bg-white/10 [&_svg]:size-4"
-        >
-          {a.icon}
+        <BulkActionButton key={a.label} icon={a.icon} onClick={a.onClick}>
           {a.label}
-        </button>
+        </BulkActionButton>
       ))}
+      {children}
       <button
         type="button"
         onClick={onDiscard}

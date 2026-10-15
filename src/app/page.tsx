@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { getDashboardData } from "@/lib/dashboard";
 import { parseRange } from "@/lib/range";
-import { Dashboard } from "@/components/data/Dashboard";
+import { Dashboard } from "@/components/dashboard/Dashboard";
 import { AppShell } from "@/components/shell/AppShell";
 
 export const dynamic = "force-dynamic";
@@ -19,9 +19,8 @@ export default async function Home({ searchParams }: Props) {
   return (
     <AppShell
       user={{ name, email: session.user.email, image: session.user.image }}
-      range={{ key: data.range.key, period: data.range.period }}
-      newLeadCount={data.newLeadCount}
-      target={data.target}
+      openTaskCount={data.openTaskCount}
+      unread={data.overdueCount > 0}
     >
       <Dashboard data={data} firstName={name.split(/\s+/)[0]} />
     </AppShell>
