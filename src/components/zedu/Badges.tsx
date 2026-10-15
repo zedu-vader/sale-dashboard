@@ -30,8 +30,11 @@ const pill: Record<Stage, string> = {
   Lost: "bg-z-pill-lost text-z-pill-lost-fg",
 };
 
-/** Lead stage pill. The text is fixed per stage so colour always matches meaning. */
-export function StatusPill({ stage, className }: { stage: Stage; className?: string }) {
+/**
+ * Lead stage pill. The colour is fixed per stage so it always matches meaning. `label` renames a stage
+ * for a screen's wording (Won → "Converted", Lost → "Not interested", Follow up → "Follow-up").
+ */
+export function StatusPill({ stage, label, className }: { stage: Stage; label?: string; className?: string }) {
   return (
     <span
       className={cx(
@@ -40,7 +43,7 @@ export function StatusPill({ stage, className }: { stage: Stage; className?: str
         className,
       )}
     >
-      {stage}
+      {label ?? stage}
     </span>
   );
 }

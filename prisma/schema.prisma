@@ -8,14 +8,19 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
+  id            String     @id @default(cuid())
   name          String?
-  email         String?   @unique
+  email         String?    @unique
   emailVerified DateTime?
   image         String?
   accounts      Account[]
   sessions      Session[]
   tasks         Task[]
+  ownedLeads    Lead[]     @relation("LeadOwner")
+  createdLeads  Lead[]     @relation("LeadCreator")
+  calls         Call[]
+  notes         Note[]
+  activities    Activity[]
 }
 
 model Account {
@@ -78,6 +83,11 @@ enum LostReason {
   OTHER
 }
 
+enum LeadSource {
+  MANUAL
+  IMPORT
+}
+
 enum CallOutcome {
   CONNECTED
   NO_ANSWER
@@ -85,41 +95,131 @@ enum CallOutcome {
   OTHER
 }
 
+enum TaskType {
+  CALL
+  EMAIL
+  FOLLOW_UP
+  MEETING
+  OTHER
+}
+
+enum ActivityType {
+  CREATED
+  STATUS_CHANGED
+  OWNER_CHANGED
+  DETAILS_UPDATED
+  CALL_LOGGED
+  NOTE_ADDED
+  TASK_CREATED
+}
+
 model Lead {
-  id           String     @id @default(cuid())
-  name         String
-  phone        String
-  type         LeadType
-  status       LeadStatus
-  lostReason   LostReason?
-  ownerName    String
-  nextAction   String?
-  nextActionAt DateTime?
-  createdAt    DateTime   @default(now())
-  calls        Call[]
+  id                String      @id @default(cuid())
+  /// Human-readable ID, shown as LD-####. Starts at 1001.
+  code              Int         @unique @default(autoincrement())
+  name              String
+  phone             String
+  email             String?
+  company           String?
+  type              LeadType
+  status            LeadStatus
+  lostReason        LostReason?
+  source            LeadSource  @default(MANUAL)
+  ownerId           String?
+  owner             User?       @relation("LeadOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  createdById       String?
+  createdBy         User?       @relation("LeadCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  /// Legacy free-text owner from before owners were team members. Read-only fallback for display.
+  ownerName         String      @default("")
+  /// Legacy next action, superseded by open tasks linked to the lead. Kept for old rows.
+  nextAction        String?
+  nextActionAt      DateTime?
+  /// Latest call (or other logged interaction); denormalised so the list can sort by it.
+  lastInteractionAt DateTime?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @default(now()) @updatedAt
+  calls             Call[]
+  tasks             Task[]
+  notes             Note[]
+  activities        Activity[]
 
   @@index([createdAt])
+  @@index([ownerId])
+  @@index([status])
+  @@index([lastInteractionAt])
 }
 
 model Call {
-  id       String      @id @default(cuid())
-  leadId   String?
-  outcome  CallOutcome
-  calledAt DateTime    @default(now())
-  lead     Lead?       @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  id          String      @id @default(cuid())
+  leadId      String?
+  outcome     CallOutcome
+  calledAt    DateTime    @default(now())
+  durationSec Int?
+  notes       String?
+  userId      String?
+  lead        Lead?       @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  user        User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  tasks       Task[]
+  activities  Activity[]
 
   @@index([calledAt])
   @@index([leadId])
 }
 
 model Task {
-  id       String   @id @default(cuid())
-  title    String
-  subtitle String?
-  dueAt    DateTime
-  done     Boolean  @default(false)
-  userId   String?
-  user     User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  id          String     @id @default(cuid())
+  title       String
+  subtitle    String?
+  type        TaskType   @default(OTHER)
+  dueAt       DateTime
+  done        Boolean    @default(false)
+  completedAt DateTime?
+  userId      String?
+  user        User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  leadId      String?
+  lead        Lead?      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  /// The call this task was created from ("From call · Oct 14").
+  callId      String?
+  call        Call?      @relation(fields: [callId], references: [id], onDelete: SetNull)
+  createdAt   DateTime   @default(now())
+  activities  Activity[]
 
   @@index([dueAt])
+  @@index([leadId])
+}
+
+model Note {
+  id         String     @id @default(cuid())
+  leadId     String
+  lead       Lead       @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  authorId   String?
+  author     User?      @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  body       String
+  createdAt  DateTime   @default(now())
+  activities Activity[]
+
+  @@index([leadId, createdAt])
+}
+
+/// Lead timeline entry. The optional links point at the call, note or task the entry is about.
+model Activity {
+  id         String       @id @default(cuid())
+  leadId     String
+  lead       Lead         @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  actorId    String?
+  actor      User?        @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  type       ActivityType
+  fromStatus LeadStatus?
+  toStatus   LeadStatus?
+  /// Free text for CREATED ("Added manually · Owner: Agnes Okafor") and OWNER_CHANGED.
+  detail     String?
+  callId     String?
+  call       Call?        @relation(fields: [callId], references: [id], onDelete: Cascade)
+  noteId     String?
+  note       Note?        @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  taskId     String?
+  task       Task?        @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  createdAt  DateTime     @default(now())
+
+  @@index([leadId, createdAt])
 }

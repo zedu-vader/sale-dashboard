@@ -59,12 +59,19 @@ export function Tabs<T extends string>({ label, options, value, onChange, classN
  * Switches a view in place (Monthly / Quarterly / Yearly, list / grid).
  * 32px sunken track, 2px inset; the active segment is a white chip with a hairline shadow.
  */
-export function SegmentedControl<T extends string>({ label, options, value, onChange, className }: Props<T>) {
+export function SegmentedControl<T extends string>({
+  label,
+  options,
+  value,
+  onChange,
+  className,
+  stretch,
+}: Props<T> & { /** Fill the width with equal segments (form fields). */ stretch?: boolean }) {
   return (
     <div
       role="radiogroup"
       aria-label={label}
-      className={cx("inline-flex items-center gap-0.5 rounded-z-md bg-z-sunken p-0.5", className)}
+      className={cx("items-center gap-0.5 rounded-z-md bg-z-sunken p-0.5", stretch ? "flex w-full [&>button]:flex-1" : "inline-flex", className)}
     >
       {options.map((o) => {
         const on = o.value === value;
