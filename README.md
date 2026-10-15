@@ -5,6 +5,7 @@ Next.js (App Router) full-stack app with Postgres (Prisma). Invite-only access: 
 ## Setup
 
 ```bash
+docker compose up -d      # local Postgres on :55432 (or use your own and edit DATABASE_URL)
 cp .env.example .env      # fill in the values
 npm install
 npx prisma migrate deploy # or `npm run db:migrate` in dev
