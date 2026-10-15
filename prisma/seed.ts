@@ -34,6 +34,7 @@ const fillerStatuses: LeadStatus[] = [
 async function main() {
   await prisma.call.deleteMany();
   await prisma.task.deleteMany();
+  await prisma.contact.deleteMany();
   await prisma.lead.deleteMany();
 
   // Background leads spread over the last ~45 days (gives the KPIs a previous period).
@@ -102,7 +103,75 @@ async function main() {
     ],
   });
 
-  console.log(`Seeded ${filler.length + named.length} leads, ${calls.length + named.length} calls, 6 tasks.`);
+  // Contacts: people the team knows. Mix of not-yet-reached-out, one linked to an
+  // existing lead (Tunde Adebayo), and a duplicate pair sharing a phone number.
+  const tunde = await prisma.lead.findFirst({ where: { name: "Tunde Adebayo" } });
+  const contactSeed = [
+    {
+      name: "Adaeze Okonkwo",
+      phone: "+234 803 555 0192",
+      email: "adaeze.okonkwo@zenithlogistics.ng",
+      company: "Zenith Logistics",
+      type: LeadType.BUSINESS,
+      notes: "Met at the Lagos tech meetup. Runs a 40-person ops team, interested in bulk pricing.",
+      createdAt: at(12, 14, 20),
+    },
+    {
+      name: "Chuka Eneh",
+      phone: "+234 806 444 7754",
+      email: null,
+      company: null,
+      type: LeadType.INDIVIDUAL,
+      notes: "Ex-colleague of Sarah's. Runs a small coaching business, no email on file yet.",
+      createdAt: at(9, 9, 5),
+    },
+    {
+      name: "Fatima Bello",
+      phone: "+234 809 321 8877",
+      email: "fatima@belloweaves.com",
+      company: "Bello Weaves",
+      type: LeadType.BUSINESS,
+      notes: null,
+      createdAt: at(8, 16, 45),
+    },
+    {
+      name: "Ifeanyi Ubah",
+      phone: "+234 802 118 4403",
+      email: "ifeanyi.ubah@gmail.com",
+      company: null,
+      type: LeadType.INDIVIDUAL,
+      notes: "Referred by Amaka (closed customer). Budget unlikely before Q3.",
+      createdAt: at(5, 11, 30),
+    },
+    {
+      name: "Adaeze Okonkwo",
+      phone: "+234 803 555 0192",
+      email: null,
+      company: "Zenith Logistics Ltd",
+      type: LeadType.BUSINESS,
+      notes: "Added again from a conference list — likely the same person as the other Adaeze.",
+      createdAt: at(2, 10, 10),
+    },
+    {
+      name: "Tunde Adebayo",
+      phone: "+234 803 123 4567",
+      email: "tunde.adebayo@flourish.co",
+      company: "Flourish Ltd",
+      type: LeadType.INDIVIDUAL,
+      notes: "Already in the pipeline as a lead.",
+      createdAt: at(6, 8, 55),
+    },
+  ];
+
+  for (const c of contactSeed) {
+    await prisma.contact.create({
+      data: { ...c, leadId: c.name === "Tunde Adebayo" ? tunde?.id ?? null : null },
+    });
+  }
+
+  console.log(
+    `Seeded ${filler.length + named.length} leads, ${calls.length + named.length} calls, 6 tasks, ${contactSeed.length} contacts.`,
+  );
 }
 
 main()

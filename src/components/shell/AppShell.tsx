@@ -14,11 +14,13 @@ type Props = {
   range: { key: RangeKey; period: string };
   newLeadCount: number;
   target: { done: number; goal: number };
+  /** Nav item to highlight. Defaults to "/" (Dashboard). */
+  activeHref?: string;
   children: ReactNode;
 };
 
 // App shell, Zedu Design System §5: sidebar (248px / 72px rail / drawer) + sticky top bar + mobile tab bar.
-export function AppShell({ user, range, newLeadCount, target, children }: Props) {
+export function AppShell({ user, range, newLeadCount, target, activeHref, children }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const [drawer, setDrawer] = useState(false);
@@ -39,7 +41,7 @@ export function AppShell({ user, range, newLeadCount, target, children }: Props)
     <RangeContext.Provider value={{ ...range, change: changeRange }}>
     <div className="min-h-screen md:grid md:grid-cols-[72px_minmax(0,1fr)] lg:grid-cols-[248px_minmax(0,1fr)]">
       <aside className="sticky top-0 hidden h-screen border-r border-line md:block">
-        <Sidebar newLeadCount={newLeadCount} target={target} />
+        <Sidebar newLeadCount={newLeadCount} target={target} activeHref={activeHref} />
       </aside>
 
       <div className="flex min-w-0 flex-col">
@@ -79,7 +81,7 @@ export function AppShell({ user, range, newLeadCount, target, children }: Props)
               <button onClick={() => setDrawer(false)} aria-label="Close menu" className="absolute right-3 top-5 z-10 grid h-11 w-11 place-items-center rounded-lg text-ink-muted">
                 <X size={20} />
               </button>
-              <Sidebar newLeadCount={newLeadCount} target={target} mode="drawer" onNavigate={() => setDrawer(false)} />
+              <Sidebar newLeadCount={newLeadCount} target={target} mode="drawer" onNavigate={() => setDrawer(false)} activeHref={activeHref} />
             </>
           )}
         </div>

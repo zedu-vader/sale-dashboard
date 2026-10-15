@@ -12,6 +12,8 @@ type Props = {
   /** "responsive": 72px rail at md, full at lg. "drawer": always full (mobile drawer). */
   mode?: "responsive" | "drawer";
   onNavigate?: () => void;
+  /** Highlights the matching nav item. Defaults to "/" (Dashboard) when omitted. */
+  activeHref?: string;
 };
 
 // In rail mode (md only) labels hide and show as hover tooltips.
@@ -28,17 +30,17 @@ export function Logo({ compact = false }: { compact?: boolean }) {
   );
 }
 
-export function Sidebar({ newLeadCount, target, mode = "responsive", onNavigate }: Props) {
+export function Sidebar({ newLeadCount, target, mode = "responsive", onNavigate, activeHref = "/" }: Props) {
   const rail = mode === "responsive";
   const hide = rail ? railHide : "";
 
   const primary: NavItem[] = [
-    { label: "Dashboard", href: "/", icon: LayoutDashboard, active: true },
-    { label: "Leads", href: "#", icon: UserRound, count: newLeadCount },
-    { label: "Calls", href: "#", icon: Phone },
-    { label: "Tasks", href: "#", icon: SquareCheck },
-    { label: "Contacts", href: "#", icon: Users },
-    { label: "Reports", href: "#", icon: ChartColumn },
+    { label: "Dashboard", href: "/", icon: LayoutDashboard, active: activeHref === "/" },
+    { label: "Leads", href: "#", icon: UserRound, count: newLeadCount, active: activeHref === "/leads" },
+    { label: "Calls", href: "#", icon: Phone, active: activeHref === "/calls" },
+    { label: "Tasks", href: "/tasks", icon: SquareCheck, active: activeHref === "/tasks" },
+    { label: "Contacts", href: "/contacts", icon: Users, active: activeHref === "/contacts" },
+    { label: "Reports", href: "#", icon: ChartColumn, active: activeHref === "/reports" },
   ];
   const secondary: NavItem[] = [
     { label: "Settings", href: "#", icon: Settings },

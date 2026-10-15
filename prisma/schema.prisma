@@ -97,8 +97,29 @@ model Lead {
   nextActionAt DateTime?
   createdAt    DateTime   @default(now())
   calls        Call[]
+  contact      Contact?
 
   @@index([createdAt])
+}
+
+// Directory of people and businesses the team knows, including ones not yet
+// reached out to. A contact becomes part of the pipeline when it is linked to
+// (or converted into) a Lead — calls then flow through that lead.
+model Contact {
+  id        String    @id @default(cuid())
+  name      String
+  phone     String
+  email     String?
+  company   String?
+  type      LeadType?
+  notes     String?
+  createdAt DateTime  @default(now())
+  lead      Lead?     @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  leadId    String?   @unique
+
+  @@index([createdAt])
+  @@index([phone])
+  @@index([email])
 }
 
 model Call {
