@@ -1,4 +1,3 @@
-import "./tailwind.css";
 import Link from "next/link";
 import { Home, SearchX } from "lucide-react";
 

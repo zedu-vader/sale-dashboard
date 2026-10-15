@@ -1,7 +1,25 @@
-* { box-sizing: border-box; }
-body { margin: 0; font-family: system-ui, sans-serif; background: #0b0d12; color: #e8eaf0; }
-main { max-width: 720px; margin: 0 auto; padding: 96px 24px; }
-h1 { font-size: 2.25rem; margin: 0 0 12px; }
-p { color: #a0a6b5; line-height: 1.6; }
-button { background: #4f6df5; color: #fff; border: 0; border-radius: 8px; padding: 10px 18px; font-size: 1rem; cursor: pointer; }
-button:hover { background: #3f58d6; }
+@import "tailwindcss";
+
+/* Design tokens (used as bg-brand, text-ink, border-line, ...) */
+@theme {
+  --color-brand: #4c1d95;
+  --color-brand-hover: #5b21b6;
+  --color-brand-soft: #ede9fe;
+  --color-ink: #17132b;
+  --color-muted: #6b6785;
+  --color-line: #ece9f5;
+  --color-canvas: #f7f6fb;
+}
+
+/* Existing element styles, moved into the base layer so Tailwind utilities
+   (which live in a later layer) can override them. Unlayered rules would beat
+   every utility regardless of specificity. */
+@layer base {
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, sans-serif; background: #0b0d12; color: #e8eaf0; }
+  main { max-width: 720px; margin: 0 auto; padding: 96px 24px; }
+  h1 { font-size: 2.25rem; margin: 0 0 12px; }
+  p { color: #a0a6b5; line-height: 1.6; }
+  button { background: #4f6df5; color: #fff; border: 0; border-radius: 8px; padding: 10px 18px; font-size: 1rem; cursor: pointer; }
+  button:hover { background: #3f58d6; }
+}

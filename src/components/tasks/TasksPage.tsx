@@ -90,7 +90,7 @@ export function TasksPage() {
             <h1 className="m-0 text-[26px] font-extrabold tracking-tight text-ink @3xl:text-3xl">Tasks</h1>
             <p className="m-0 mt-1 leading-snug text-muted">Stay on top of your follow-ups and never miss an important lead.</p>
           </div>
-          <button onClick={() => setAdding(true)} className={`${btnPrimary} !h-[38px] !px-3.5 @3xl:!h-[42px] @3xl:!px-5`}>
+          <button onClick={() => setAdding(true)} className={`${btnPrimary} h-[38px]! px-3.5! @3xl:h-[42px]! @3xl:px-5!`}>
             <Plus size={16} /> Add Task
           </button>
         </div>
