@@ -91,12 +91,12 @@ export function AddTaskDialog({ open, onClose, onSubmit }: Props) {
         </label>
 
         <label className={label}>
-          Notes <span className="font-normal text-muted">(optional)</span>
+          <span>Notes <span className="font-normal text-muted">(optional)</span></span>
           <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="What should happen?" maxLength={500} className={input} />
         </label>
 
         <label className={label}>
-          Related lead <span className="font-normal text-muted">(optional)</span>
+          <span>Related lead <span className="font-normal text-muted">(optional)</span></span>
           <input value={lead} onChange={(e) => setLead(e.target.value)} placeholder="Lead or company name" maxLength={200} className={input} />
         </label>
 
