@@ -35,12 +35,12 @@ type Props = {
   children: ReactNode;
 };
 
-// Calls, Tasks and Contacts pages aren't built yet, so those items don't navigate.
+// Calls and Contacts pages aren't built yet, so those items don't navigate.
 const NAV = [
   { label: "Dashboard", href: "/", icon: <LayoutDashboard aria-hidden /> },
   { label: "Leads", href: "/leads", icon: <UserRound aria-hidden /> },
   { label: "Calls", href: "#", icon: <Phone aria-hidden /> },
-  { label: "Tasks", href: "#", icon: <SquareCheck aria-hidden />, tasks: true },
+  { label: "Tasks", href: "/tasks", icon: <SquareCheck aria-hidden />, tasks: true },
   { label: "Contacts", href: "#", icon: <Contact aria-hidden /> },
 ];
 
