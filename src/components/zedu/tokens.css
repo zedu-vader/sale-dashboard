@@ -1,0 +1,233 @@
+/*
+ * ZEDU design system v2 tokens (Figma: Fatethrow › "ZEDU · Design system", node 16796:18178).
+ *
+ * Everything is prefixed `z` so it sits beside the v1 tokens in globals.css without clashing:
+ *   CSS variables   --z-*            (mirrors the Figma "ZEDU / Color" names: bg/app → --z-bg-app)
+ *   Tailwind        bg-z-app, text-z-fg-muted, border-z-line, rounded-z-md, shadow-z-sm, text-z-small …
+ *
+ * Light mode only. Figma's Dark mode mirrors Light until it is designed.
+ */
+
+:root {
+  /* color/bg */
+  --z-bg-app: #f7f7f8;
+  --z-bg-surface: #ffffff;
+  --z-bg-subtle: #fafafa;
+  --z-bg-sunken: #f2f2f4;
+  --z-bg-selected: #eef0ff;
+  --z-bg-primary: #18181c;
+  --z-bg-primary-hover: #27272d;
+  --z-bg-inverse: #18181c;
+  --z-bg-accent: #5048e5;
+  --z-bg-accent-subtle: #eef0ff;
+  --z-bg-danger: #d92d20;
+  --z-bg-danger-hover: #b42318;
+  --z-bg-danger-subtle: #fef3f2;
+
+  /* color/text */
+  --z-text-primary: #18181c;
+  --z-text-secondary: #52525c;
+  --z-text-muted: #71717c;
+  --z-text-placeholder: #a0a0ab;
+  --z-text-accent: #5048e5;
+  --z-text-success: #079455;
+  --z-text-warning: #b54708;
+  --z-text-danger: #d92d20;
+  --z-text-on-primary: #ffffff;
+  --z-text-on-inverse-muted: #a0a0ab;
+
+  /* color/icon */
+  --z-icon-default: #71717c;
+  --z-icon-strong: #18181c;
+  --z-icon-subtle: #a0a0ab;
+
+  /* color/border, color/focus */
+  --z-border-default: #ebebee;
+  --z-border-strong: #e1e1e5;
+  --z-border-hover: #cfcfd6;
+  --z-border-focus: #6366f1;
+  --z-border-danger: #f04438;
+  --z-border-inverse: #3f3f48;
+  --z-focus-ring: rgba(99, 102, 241, 0.45);
+  --z-focus-halo: rgba(99, 102, 241, 0.15);
+
+  /* color/chart, color/status, color/score */
+  --z-chart-1: #6366f1;
+  --z-chart-2: #a4adfc;
+  --z-chart-3: #e0e4ff;
+  --z-chart-4: #e1e1e5;
+  --z-status-success: #17b26a;
+  --z-status-warning: #f79009;
+  --z-status-danger: #f04438;
+  --z-status-info: #3b82f6;
+  --z-score-high: #17b26a;
+  --z-score-mid: #fdb022;
+  --z-score-low: #f97316;
+  --z-score-empty: #e1e1e5;
+
+  /* color/pill — soft tint + darker text per pipeline stage */
+  --z-pill-new-bg: #e0e4ff;
+  --z-pill-new-fg: #4338ca;
+  --z-pill-contacted-bg: #ebebee;
+  --z-pill-contacted-fg: #3f3f48;
+  --z-pill-connected-bg: #dbeafe;
+  --z-pill-connected-fg: #1d4ed8;
+  --z-pill-interested-bg: #ccfbf1;
+  --z-pill-interested-fg: #0f766e;
+  --z-pill-follow-up-bg: #fef0c7;
+  --z-pill-follow-up-fg: #b54708;
+  --z-pill-qualified-bg: #ede9fe;
+  --z-pill-qualified-fg: #6d28d9;
+  --z-pill-proposal-bg: #ffedd5;
+  --z-pill-proposal-fg: #c2410c;
+  --z-pill-won-bg: #d1fadf;
+  --z-pill-won-fg: #067647;
+  --z-pill-lost-bg: #fee4e2;
+  --z-pill-lost-fg: #b42318;
+
+  /* shadow colours */
+  --z-shadow-xs: rgba(16, 24, 40, 0.05);
+  --z-shadow-sm: rgba(16, 24, 40, 0.06);
+  --z-shadow-md: rgba(16, 24, 40, 0.1);
+  --z-shadow-lg: rgba(16, 24, 40, 0.18);
+}
+
+@theme inline {
+  --color-z-app: var(--z-bg-app);
+  --color-z-surface: var(--z-bg-surface);
+  --color-z-subtle: var(--z-bg-subtle);
+  --color-z-sunken: var(--z-bg-sunken);
+  --color-z-selected: var(--z-bg-selected);
+  --color-z-primary: var(--z-bg-primary);
+  --color-z-primary-hover: var(--z-bg-primary-hover);
+  --color-z-inverse: var(--z-bg-inverse);
+  --color-z-accent: var(--z-bg-accent);
+  --color-z-accent-subtle: var(--z-bg-accent-subtle);
+  --color-z-danger: var(--z-bg-danger);
+  --color-z-danger-hover: var(--z-bg-danger-hover);
+  --color-z-danger-subtle: var(--z-bg-danger-subtle);
+
+  --color-z-fg: var(--z-text-primary);
+  --color-z-fg-secondary: var(--z-text-secondary);
+  --color-z-fg-muted: var(--z-text-muted);
+  --color-z-fg-placeholder: var(--z-text-placeholder);
+  --color-z-fg-accent: var(--z-text-accent);
+  --color-z-fg-success: var(--z-text-success);
+  --color-z-fg-warning: var(--z-text-warning);
+  --color-z-fg-danger: var(--z-text-danger);
+  --color-z-fg-on-primary: var(--z-text-on-primary);
+  --color-z-fg-on-inverse-muted: var(--z-text-on-inverse-muted);
+
+  --color-z-icon: var(--z-icon-default);
+  --color-z-icon-strong: var(--z-icon-strong);
+  --color-z-icon-subtle: var(--z-icon-subtle);
+
+  --color-z-line: var(--z-border-default);
+  --color-z-line-strong: var(--z-border-strong);
+  --color-z-line-hover: var(--z-border-hover);
+  --color-z-line-focus: var(--z-border-focus);
+  --color-z-line-danger: var(--z-border-danger);
+  --color-z-line-inverse: var(--z-border-inverse);
+
+  --color-z-chart-1: var(--z-chart-1);
+  --color-z-chart-2: var(--z-chart-2);
+  --color-z-chart-3: var(--z-chart-3);
+  --color-z-chart-4: var(--z-chart-4);
+  --color-z-status-success: var(--z-status-success);
+  --color-z-status-warning: var(--z-status-warning);
+  --color-z-status-danger: var(--z-status-danger);
+  --color-z-status-info: var(--z-status-info);
+  --color-z-score-high: var(--z-score-high);
+  --color-z-score-mid: var(--z-score-mid);
+  --color-z-score-low: var(--z-score-low);
+  --color-z-score-empty: var(--z-score-empty);
+
+  --color-z-pill-new: var(--z-pill-new-bg);
+  --color-z-pill-new-fg: var(--z-pill-new-fg);
+  --color-z-pill-contacted: var(--z-pill-contacted-bg);
+  --color-z-pill-contacted-fg: var(--z-pill-contacted-fg);
+  --color-z-pill-connected: var(--z-pill-connected-bg);
+  --color-z-pill-connected-fg: var(--z-pill-connected-fg);
+  --color-z-pill-interested: var(--z-pill-interested-bg);
+  --color-z-pill-interested-fg: var(--z-pill-interested-fg);
+  --color-z-pill-follow-up: var(--z-pill-follow-up-bg);
+  --color-z-pill-follow-up-fg: var(--z-pill-follow-up-fg);
+  --color-z-pill-qualified: var(--z-pill-qualified-bg);
+  --color-z-pill-qualified-fg: var(--z-pill-qualified-fg);
+  --color-z-pill-proposal: var(--z-pill-proposal-bg);
+  --color-z-pill-proposal-fg: var(--z-pill-proposal-fg);
+  --color-z-pill-won: var(--z-pill-won-bg);
+  --color-z-pill-won-fg: var(--z-pill-won-fg);
+  --color-z-pill-lost: var(--z-pill-lost-bg);
+  --color-z-pill-lost-fg: var(--z-pill-lost-fg);
+
+  /* ZEDU/Shadow/*, ZEDU/Focus/* */
+  --shadow-z-xs: 0 1px 2px 0 var(--z-shadow-xs);
+  --shadow-z-sm: 0 1px 3px 0 var(--z-shadow-sm), 0 1px 2px -1px var(--z-shadow-xs);
+  --shadow-z-md: 0 8px 24px -6px var(--z-shadow-md), 0 2px 6px 0 var(--z-shadow-xs);
+  --shadow-z-lg: 0 24px 48px -12px var(--z-shadow-lg), 0 4px 12px 0 var(--z-shadow-sm);
+  --shadow-z-focus-ring: 0 0 0 2px var(--z-bg-surface), 0 0 0 4px var(--z-focus-ring);
+  --shadow-z-focus-input: 0 0 0 3px var(--z-focus-halo);
+}
+
+@theme {
+  /* radius/* */
+  --radius-z-xs: 4px;
+  --radius-z-sm: 6px;
+  --radius-z-md: 8px;
+  --radius-z-lg: 10px;
+  --radius-z-xl: 12px;
+  --radius-z-2xl: 16px;
+
+  /* ZEDU text styles (Geist). Pair with font-medium / font-semibold where the Figma style differs. */
+  --text-z-display: 28px;
+  --text-z-display--line-height: 36px;
+  --text-z-display--letter-spacing: -0.02em;
+  --text-z-display--font-weight: 500;
+  --text-z-page: 20px;
+  --text-z-page--line-height: 28px;
+  --text-z-page--letter-spacing: -0.01em;
+  --text-z-page--font-weight: 600;
+  --text-z-section: 16px;
+  --text-z-section--line-height: 24px;
+  --text-z-section--letter-spacing: -0.005em;
+  --text-z-section--font-weight: 600;
+  --text-z-card: 14px;
+  --text-z-card--line-height: 20px;
+  --text-z-card--font-weight: 600;
+  --text-z-body: 14px;
+  --text-z-body--line-height: 20px;
+  --text-z-small: 13px;
+  --text-z-small--line-height: 20px;
+  --text-z-caption: 12px;
+  --text-z-caption--line-height: 16px;
+  --text-z-overline: 11px;
+  --text-z-overline--line-height: 16px;
+  --text-z-overline--letter-spacing: 0.06em;
+  --text-z-overline--font-weight: 500;
+  --text-z-mono: 12px;
+  --text-z-mono--line-height: 16px;
+}
+
+/*
+ * Root for any screen built with ZEDU components: Geist Regular on text/primary, tabular figures,
+ * and Lucide icons at the system's 1.5px stroke (lucide-react defaults to 2).
+ */
+@utility zedu {
+  @apply font-sans text-z-body font-normal text-z-fg antialiased;
+  font-feature-settings: "tnum";
+
+  & :where(svg.lucide) {
+    stroke-width: 1.5;
+  }
+}
+
+/* ZEDU/Overline is always uppercase. */
+@utility z-overline {
+  @apply text-z-overline uppercase;
+}
+
+/* Base for every ZEDU control: keyboard focus uses ZEDU/Focus/Ring instead of the v1 outline. */
+@utility z-focus {
+  @apply outline-none focus-visible:shadow-z-focus-ring focus-visible:outline-none;
+}

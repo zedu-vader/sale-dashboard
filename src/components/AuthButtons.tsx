@@ -1,12 +1,8 @@
 "use client";
 
 import { signIn } from "next-auth/react";
-import { button } from "@/components/ui/button";
+import { Button } from "@/components/zedu";
 
 export function SignInButton() {
-  return (
-    <button className={button({ size: "lg" })} onClick={() => signIn("google")}>
-      Sign in with Google
-    </button>
-  );
+  return <Button onClick={() => signIn("google")}>Sign in with Google</Button>;
 }
