@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { SignInButton } from "@/components/AuthButtons";
-import { DashboardShell } from "@/components/dashboard/DashboardShell";
+import { AppShell } from "@/components/shell/AppShell";
 import { TasksBoard } from "@/components/tasks/TasksBoard";
 import { Card, Logo } from "@/components/zedu";
 import { INITIAL_TASKS } from "@/data/tasks";
@@ -31,13 +31,13 @@ export default async function TasksPage() {
   const overdue = INITIAL_TASKS.some((t) => t.dueTone === "overdue" && t.status !== "Completed");
 
   return (
-    <DashboardShell
+    <AppShell
       user={{ name, email: session.user.email, image: session.user.image }}
       openTaskCount={open}
       unread={overdue}
       active="Tasks"
     >
       <TasksBoard />
-    </DashboardShell>
+    </AppShell>
   );
 }
