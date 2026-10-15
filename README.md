@@ -9,7 +9,7 @@ docker compose up -d      # local Postgres on :55432 (or use your own and edit D
 cp .env.example .env      # fill in the values
 npm install
 npx prisma migrate deploy # or `npm run db:migrate` in dev
-npm run db:seed           # optional: sample leads, calls and tasks (wipes those tables)
+npm run db:seed           # optional: sample leads, calls, tasks, notes and teammates (wipes those tables)
 npm run dev
 ```
 
@@ -29,6 +29,17 @@ INSERT INTO "Invite" (token, role) VALUES ('ABCDEFGHJ', 'ADMIN');
 ```
 
 Set `AUTH_SECRET` (32+ random chars) and the `SMTP_*` variables from `.env.example`. Without `SMTP_HOST`, emails are printed to the server log.
+
+## Pages
+
+- `/` Dashboard: KPIs, recent lead activity and tasks.
+- `/leads` Leads: search, filter (status, lead type, owner), sort, tabs (All / Assigned to me / Unassigned),
+  bulk assign / change status / delete, and Add lead (with duplicate-phone detection). `?new=1` opens Add lead.
+- `/leads/[id]` Lead profile: details, owner, next action, and Activity / Calls / Tasks / Notes, with
+  Edit details, Log call and New task.
+
+Owners are team members (any user who has signed in; the seed adds three sample teammates). Each lead gets an
+`LD-####` code, numbered from 1001.
 
 ## Design system
 

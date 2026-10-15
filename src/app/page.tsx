@@ -3,7 +3,7 @@ import { getSession } from "@/lib/auth";
 import { getDashboardData } from "@/lib/dashboard";
 import { parseRange } from "@/lib/range";
 import { Dashboard } from "@/components/dashboard/Dashboard";
-import { DashboardShell } from "@/components/dashboard/DashboardShell";
+import { AppShell } from "@/components/shell/AppShell";
 
 export const dynamic = "force-dynamic";
 
@@ -17,12 +17,12 @@ export default async function Home({ searchParams }: Props) {
   const name = session.user.name;
 
   return (
-    <DashboardShell
+    <AppShell
       user={{ name, email: session.user.email, image: session.user.image }}
       openTaskCount={data.openTaskCount}
       unread={data.overdueCount > 0}
     >
       <Dashboard data={data} firstName={name.split(/\s+/)[0]} />
-    </DashboardShell>
+    </AppShell>
   );
 }
