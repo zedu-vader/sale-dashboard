@@ -21,6 +21,8 @@ export const TASK_OWNERS: TaskOwner[] = [ME, IBRAHIM, ZAINAB, UNASSIGNED];
 
 export interface TaskItem {
   id: string;
+  /** True when this row is backed by the Prisma task model rather than Figma sample data. */
+  persisted?: boolean;
   title: string;
   description: string;
   type: TaskType;

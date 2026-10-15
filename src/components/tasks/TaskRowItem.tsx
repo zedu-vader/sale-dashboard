@@ -14,10 +14,11 @@ type Props = {
   onOpen: () => void;
   onFollowUp: () => void;
   onDelete: () => void;
+  readOnly?: boolean;
 };
 
 /** Task row (Figma 3:3278): 60px desktop row, compact card under 768px (Figma 7:4317). */
-export function TaskRowItem({ task, onToggle, onOpen, onFollowUp, onDelete }: Props) {
+export function TaskRowItem({ task, onToggle, onOpen, onFollowUp, onDelete, readOnly = false }: Props) {
   const done = task.status === "Completed";
   return (
     <div className="group flex items-center gap-3 border-b border-z-line bg-z-surface py-0 pl-3 pr-2 transition-colors duration-150 last:border-b-0 hover:bg-z-subtle max-md:items-start max-md:px-4 max-md:py-3 md:h-[60px]">
@@ -32,6 +33,7 @@ export function TaskRowItem({ task, onToggle, onOpen, onFollowUp, onDelete }: Pr
       <button
         type="button"
         onClick={onOpen}
+        disabled={readOnly}
         className="z-focus flex min-w-0 flex-1 flex-col items-start gap-0.5 overflow-hidden rounded-z-xs py-1 text-left"
       >
         <span
@@ -79,7 +81,7 @@ export function TaskRowItem({ task, onToggle, onOpen, onFollowUp, onDelete }: Pr
       <span className="hidden w-[96px] shrink-0 items-center overflow-hidden md:flex">
         <TaskStatusPill status={task.status} />
       </span>
-      <span className="shrink-0 max-md:hidden">
+      {!readOnly && <span className="shrink-0 max-md:hidden">
         <Dropdown
           align="end"
           trigger={(props) => (
@@ -96,7 +98,7 @@ export function TaskRowItem({ task, onToggle, onOpen, onFollowUp, onDelete }: Pr
             </MenuItem>
           </Menu>
         </Dropdown>
-      </span>
+      </span>}
       <span className="shrink-0 md:hidden">
         <TaskTypeTag type={task.type} />
       </span>

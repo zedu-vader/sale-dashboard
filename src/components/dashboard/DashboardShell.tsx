@@ -6,6 +6,7 @@
 
 import { CircleHelp, Contact, LayoutDashboard, Phone, Search as SearchIcon, SquareCheck, UserRound, X } from "lucide-react";
 import { signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import {
   Dropdown,
@@ -47,7 +48,7 @@ const initialsOf = (name: string) =>
 const NAV = [
   { label: "Dashboard", href: "/", icon: <LayoutDashboard aria-hidden /> },
   { label: "Leads", href: "#", icon: <UserRound aria-hidden /> },
-  { label: "Calls", href: "#", icon: <Phone aria-hidden /> },
+  { label: "Calls", href: "/calls", icon: <Phone aria-hidden /> },
   { label: "Tasks", href: "/tasks", icon: <SquareCheck aria-hidden />, tasks: true },
   { label: "Contacts", href: "#", icon: <Contact aria-hidden /> },
 ];
@@ -65,6 +66,7 @@ function useWideScreen() {
 }
 
 export function DashboardShell({ user, openTaskCount, unread, active = "Dashboard", children }: Props) {
+  const router = useRouter();
   const wide = useWideScreen();
   // null = follow the viewport; the top-bar toggle pins it until the viewport class changes.
   const [pinned, setPinned] = useState<boolean | null>(null);
@@ -138,7 +140,7 @@ export function DashboardShell({ user, openTaskCount, unread, active = "Dashboar
           unread={unread}
           onToggleSidebar={() => setPinned(!collapsed)}
           onOpenMenu={() => setDrawer(true)}
-          newMenu={<NewMenu onImport={() => {}} />}
+          newMenu={<NewMenu onLogCall={() => router.push("/calls?log=1")} onImport={() => {}} />}
         />
         <main className="min-h-0 flex-1 overflow-y-auto">{children}</main>
       </div>

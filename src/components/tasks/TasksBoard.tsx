@@ -59,8 +59,8 @@ const TYPE_OPTIONS: { value: TaskType | "all"; label: string }[] = [
  * Tasks page content (Figma "ZEDU · Tasks screens", 7:4065). Renders inside the
  * app shell — sidebar/topbar come from the shell. UI-only: mock data, in-memory.
  */
-export function TasksBoard() {
-  const [tasks, setTasks] = useState<TaskItem[]>(INITIAL_TASKS);
+export function TasksBoard({ callTasks = [], callTasksUnavailable = false }: { callTasks?: TaskItem[]; callTasksUnavailable?: boolean }) {
+  const [tasks, setTasks] = useState<TaskItem[]>(() => [...callTasks, ...INITIAL_TASKS]);
   const [tab, setTab] = useState<TaskTab>("all");
   const [query, setQuery] = useState("");
   const [owner, setOwner] = useState<TaskOwner | null>(ME);
@@ -124,7 +124,24 @@ export function TasksBoard() {
     setToast({ id: Date.now(), message, undo });
   }
 
-  function toggleTask(task: TaskItem) {
+  async function toggleTask(task: TaskItem) {
+    const nextStatus = task.status === "Completed" ? "Pending" : "Completed";
+    if (task.persisted) {
+      try {
+        const response = await fetch(`/api/tasks/${encodeURIComponent(task.id)}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ done: nextStatus === "Completed" }),
+        });
+        if (!response.ok) {
+          const payload = await response.json().catch(() => null);
+          throw new Error(payload?.error ?? "Could not update the follow-up task.");
+        }
+      } catch (error) {
+        showToast(error instanceof Error ? error.message : "Could not update the follow-up task.");
+        return;
+      }
+    }
     if (task.status === "Completed") {
       setTasks((ts) => ts.map((t) => (t.id === task.id ? { ...t, status: "Pending" as const } : t)));
       setRecent((r) => {
@@ -137,12 +154,7 @@ export function TasksBoard() {
     setTasks((ts) => ts.map((t) => (t.id === task.id ? { ...t, status: "Completed" as const } : t)));
     setRecent((r) => new Set(r).add(task.id));
     showToast(`"${task.title}" completed`, () => {
-      setTasks((ts) => ts.map((t) => (t.id === task.id ? { ...t, status: "Pending" as const } : t)));
-      setRecent((r) => {
-        const n = new Set(r);
-        n.delete(task.id);
-        return n;
-      });
+      void toggleTask({ ...task, status: "Completed" });
     });
   }
 
@@ -181,6 +193,8 @@ export function TasksBoard() {
           />
         }
       />
+
+      {callTasksUnavailable && <div role="alert" className="mx-6 mt-4 rounded-z-md border border-z-line bg-z-subtle px-4 py-3 text-z-small text-z-fg-danger max-sm:mx-4">Call follow-up tasks couldn’t be loaded. Refresh this page to try again.</div>}
 
       <div className="flex flex-col gap-3 px-6 pb-6 pt-4 max-sm:px-4">
         <div className="flex items-center gap-2 overflow-x-auto pb-0.5">
@@ -300,8 +314,9 @@ export function TasksBoard() {
                   <TaskRowItem
                     key={t.id}
                     task={t}
-                    onToggle={() => toggleTask(t)}
+                    onToggle={() => void toggleTask(t)}
                     onOpen={() => setPanelTaskId(t.id)}
+                    readOnly={t.persisted}
                     onFollowUp={() =>
                       setFollowUp({ leadName: t.recordName, callWhen: "Oct 14, 10:12 AM" })
                     }
@@ -331,7 +346,7 @@ export function TasksBoard() {
           }}
           onDelete={() => deleteTask(panelTask)}
           onComplete={() => {
-            toggleTask(panelTask);
+            void toggleTask(panelTask);
             setPanelTaskId(null);
           }}
         />

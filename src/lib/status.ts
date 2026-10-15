@@ -23,8 +23,17 @@ export const LOST_REASONS: Record<LostReason, string> = {
 };
 
 export const CALL_OUTCOMES: Record<CallOutcome, string> = {
+  REQUESTED_CALLBACK: "Requested callback",
+  INTERESTED: "Interested",
+  NOT_INTERESTED: "Not interested",
+  CONVERTED: "Converted",
+  OTHER: "Other",
+  NOT_APPLICABLE: "Not applicable",
+};
+
+export const LEGACY_CALL_OUTCOMES = {
   CONNECTED: "Connected",
   NO_ANSWER: "No answer",
   NOT_INTERESTED: "Not interested",
   OTHER: "Other",
-};
+} as const;

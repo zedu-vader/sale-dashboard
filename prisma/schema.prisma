@@ -16,6 +16,7 @@ model User {
   accounts      Account[]
   sessions      Session[]
   tasks         Task[]
+  calls         Call[]    @relation("CallCaller")
 }
 
 model Account {
@@ -78,11 +79,35 @@ enum LostReason {
   OTHER
 }
 
-enum CallOutcome {
+enum LegacyCallOutcome {
   CONNECTED
   NO_ANSWER
   NOT_INTERESTED
   OTHER
+
+  @@map("CallOutcome")
+}
+
+enum CallConnectionStatus {
+  CONNECTED
+  NOT_CONNECTED
+}
+
+enum CallOutcome {
+  REQUESTED_CALLBACK
+  INTERESTED
+  NOT_INTERESTED
+  CONVERTED
+  OTHER
+  NOT_APPLICABLE
+
+  @@map("CallDisposition")
+}
+
+enum TaskType {
+  CALL
+  EMAIL
+  NOTE
 }
 
 model Lead {
@@ -97,19 +122,33 @@ model Lead {
   nextActionAt DateTime?
   createdAt    DateTime   @default(now())
   calls        Call[]
+  tasks        Task[]
 
   @@index([createdAt])
 }
 
 model Call {
-  id       String      @id @default(cuid())
-  leadId   String?
-  outcome  CallOutcome
-  calledAt DateTime    @default(now())
-  lead     Lead?       @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  id               String               @id @default(cuid())
+  leadId           String?
+  callerId         String?
+  callerName       String?
+  calledAt         DateTime             @default(now())
+  durationSeconds  Int?
+  connectionStatus CallConnectionStatus @default(CONNECTED)
+  outcome          CallOutcome          @default(OTHER) @map("callOutcome")
+  legacyOutcome    LegacyCallOutcome?   @map("outcome")
+  notes            String?
+  nextAction       String?
+  followUpAt       DateTime?
+  lead             Lead?                @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  caller           User?                @relation("CallCaller", fields: [callerId], references: [id], onDelete: SetNull)
+  tasks            Task[]
 
   @@index([calledAt])
   @@index([leadId])
+  @@index([callerId])
+  @@index([connectionStatus, calledAt])
+  @@index([outcome, calledAt])
 }
 
 model Task {
@@ -119,7 +158,16 @@ model Task {
   dueAt    DateTime
   done     Boolean  @default(false)
   userId   String?
+  type     TaskType?
+  ownerName String @default("You")
+  leadName String?
+  leadId   String?
+  callId   String?
   user     User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  lead     Lead?    @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  call     Call?    @relation(fields: [callId], references: [id], onDelete: SetNull)
 
   @@index([dueAt])
+  @@index([leadId])
+  @@index([callId])
 }

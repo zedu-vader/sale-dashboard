@@ -1,4 +1,4 @@
-import { CallOutcome, LeadStatus, LeadType, LostReason, PrismaClient } from "@prisma/client";
+import { CallOutcome, CallConnectionStatus, LegacyCallOutcome, LeadStatus, LeadType, LostReason, PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -58,28 +58,34 @@ async function main() {
 
   // The five leads shown in the mock, newest first.
   const named = [
-    { name: "Tunde Adebayo", phone: "+234 803 123 4567", type: LeadType.INDIVIDUAL, status: LeadStatus.INTERESTED, ownerName: "You", nextAction: "Call again", nextActionAt: at(-2), call: at(0, 10, 12), outcome: CallOutcome.CONNECTED },
-    { name: "Flourish Ltd", phone: "+234 802 987 6543", type: LeadType.BUSINESS, status: LeadStatus.FOLLOW_UP, ownerName: "You", nextAction: "Send details", nextActionAt: at(-1), call: at(1, 16, 20), outcome: CallOutcome.CONNECTED },
-    { name: "Kemi Ibrahim", phone: "+234 816 222 3344", type: LeadType.INDIVIDUAL, status: LeadStatus.LOST, lostReason: LostReason.NOT_INTERESTED, ownerName: "Sarah", call: at(1, 11, 5), outcome: CallOutcome.NOT_INTERESTED },
-    { name: "Ben Okafor", phone: "+234 809 444 2211", type: LeadType.BUSINESS, status: LeadStatus.CONNECTED, ownerName: "You", nextAction: "Call again", nextActionAt: at(-1), call: at(2, 9, 30), outcome: CallOutcome.CONNECTED },
-    { name: "Amaka Akintola", phone: "+234 818 765 4321", type: LeadType.INDIVIDUAL, status: LeadStatus.WON, ownerName: "Tolu", call: at(3, 15, 45), outcome: CallOutcome.CONNECTED },
+    { name: "Tunde Adebayo", phone: "+234 803 123 4567", type: LeadType.INDIVIDUAL, status: LeadStatus.INTERESTED, ownerName: "You", nextAction: "Call again", nextActionAt: at(-2), call: at(0, 10, 12), legacyOutcome: LegacyCallOutcome.CONNECTED },
+    { name: "Flourish Ltd", phone: "+234 802 987 6543", type: LeadType.BUSINESS, status: LeadStatus.FOLLOW_UP, ownerName: "You", nextAction: "Send details", nextActionAt: at(-1), call: at(1, 16, 20), legacyOutcome: LegacyCallOutcome.CONNECTED },
+    { name: "Kemi Ibrahim", phone: "+234 816 222 3344", type: LeadType.INDIVIDUAL, status: LeadStatus.LOST, lostReason: LostReason.NOT_INTERESTED, ownerName: "Sarah", call: at(1, 11, 5), legacyOutcome: LegacyCallOutcome.NOT_INTERESTED },
+    { name: "Ben Okafor", phone: "+234 809 444 2211", type: LeadType.BUSINESS, status: LeadStatus.CONNECTED, ownerName: "You", nextAction: "Call again", nextActionAt: at(-1), call: at(2, 9, 30), legacyOutcome: LegacyCallOutcome.CONNECTED },
+    { name: "Amaka Akintola", phone: "+234 818 765 4321", type: LeadType.INDIVIDUAL, status: LeadStatus.WON, ownerName: "Tolu", call: at(3, 15, 45), legacyOutcome: LegacyCallOutcome.CONNECTED },
   ];
-  for (const [i, { call, outcome, ...lead }] of named.entries()) {
+  for (const [i, { call, legacyOutcome, ...lead }] of named.entries()) {
     await prisma.lead.create({
-      data: { ...lead, createdAt: at(5 - i, 8), calls: { create: { outcome, calledAt: call } } },
+      data: { ...lead, createdAt: at(5 - i, 8), calls: { create: {
+        calledAt: call,
+        legacyOutcome,
+        connectionStatus: CallConnectionStatus.CONNECTED,
+        outcome: legacyOutcome === LegacyCallOutcome.NOT_INTERESTED ? CallOutcome.NOT_INTERESTED : CallOutcome.OTHER,
+      } } },
     });
   }
 
   // Calls: the mock's last 7 days, plus quieter background days for earlier in the month/previous period.
-  const calls: { leadId: string; outcome: CallOutcome; calledAt: Date }[] = [];
+  const calls: { leadId: string; outcome: CallOutcome; legacyOutcome: LegacyCallOutcome; connectionStatus: CallConnectionStatus; calledAt: Date }[] = [];
   const addDay = (daysAgo: number, connected: number, unanswered: number) => {
     for (let i = 0; i < connected; i++) {
       const r = rand();
-      const outcome = r < 0.1 ? CallOutcome.NOT_INTERESTED : r < 0.18 ? CallOutcome.OTHER : CallOutcome.CONNECTED;
-      calls.push({ leadId: pick(fillerIds), outcome, calledAt: at(daysAgo, 8 + Math.floor(rand() * 9), Math.floor(rand() * 60)) });
+      const legacyOutcome = r < 0.1 ? LegacyCallOutcome.NOT_INTERESTED : r < 0.18 ? LegacyCallOutcome.OTHER : LegacyCallOutcome.CONNECTED;
+      const outcome = legacyOutcome === LegacyCallOutcome.NOT_INTERESTED ? CallOutcome.NOT_INTERESTED : CallOutcome.OTHER;
+      calls.push({ leadId: pick(fillerIds), outcome, legacyOutcome, connectionStatus: CallConnectionStatus.CONNECTED, calledAt: at(daysAgo, 8 + Math.floor(rand() * 9), Math.floor(rand() * 60)) });
     }
     for (let i = 0; i < unanswered; i++) {
-      calls.push({ leadId: pick(fillerIds), outcome: CallOutcome.NO_ANSWER, calledAt: at(daysAgo, 8 + Math.floor(rand() * 9), Math.floor(rand() * 60)) });
+      calls.push({ leadId: pick(fillerIds), outcome: CallOutcome.NOT_APPLICABLE, legacyOutcome: LegacyCallOutcome.NO_ANSWER, connectionStatus: CallConnectionStatus.NOT_CONNECTED, calledAt: at(daysAgo, 8 + Math.floor(rand() * 9), Math.floor(rand() * 60)) });
     }
   };
   // The named-lead calls above already account for one connected call on some days; close enough for sample data.
