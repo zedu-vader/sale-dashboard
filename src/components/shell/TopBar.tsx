@@ -44,7 +44,7 @@ export function TopBar({ user, onOpenMenu }: Props) {
         <span className="md:hidden"><Logo /></span>
 
         <label
-          className={`${mobileSearch ? "max-md:absolute max-md:inset-x-4 max-md:top-3 max-md:z-10 max-md:flex" : "max-md:hidden"} flex h-10 w-[320px] items-center gap-2 rounded-lg border border-line bg-surface px-3 transition duration-fast focus-within:border-brand-bright focus-within:shadow-[0_0_0_3px_rgba(109,77,255,.15)] max-md:w-auto`}
+          className={`${mobileSearch ? "max-md:absolute max-md:inset-x-4 max-md:top-3 max-md:z-10 max-md:flex" : "max-md:hidden"} flex h-10 w-[320px] items-center gap-2 rounded-lg border border-line bg-surface px-3 transition duration-150 focus-within:border-brand-bright focus-within:shadow-[0_0_0_3px_rgba(109,77,255,.15)] max-md:w-auto`}
         >
           <Search size={16} className="shrink-0 text-ink-muted" />
           <span className="sr-only">Search</span>

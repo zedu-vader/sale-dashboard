@@ -47,7 +47,7 @@ export function AppShell({ user, range, newLeadCount, target, children }: Props)
         {/* Values crossfade while a new range loads (§8: data animations don't replay). */}
         <main
           aria-busy={pending}
-          className={`px-8 pb-10 pt-7 transition-opacity duration-base max-lg:px-6 max-sm:px-4 max-sm:pt-5 max-md:pb-[calc(64px+env(safe-area-inset-bottom)+88px)] ${pending ? "opacity-60" : ""}`}
+          className={`px-8 pb-10 pt-7 transition-opacity duration-200 max-lg:px-6 max-sm:px-4 max-sm:pt-5 max-md:pb-[calc(64px+env(safe-area-inset-bottom)+88px)] ${pending ? "opacity-60" : ""}`}
         >
           <div className="mx-auto max-w-content">{children}</div>
         </main>
@@ -66,13 +66,13 @@ export function AppShell({ user, range, newLeadCount, target, children }: Props)
       <div className={`fixed inset-0 z-50 md:hidden ${drawer ? "" : "pointer-events-none"}`} aria-hidden={!drawer}>
         <div
           onClick={() => setDrawer(false)}
-          className={`absolute inset-0 bg-[rgba(13,11,31,.5)] backdrop-blur-[4px] transition-opacity duration-slow ${drawer ? "opacity-100" : "opacity-0"}`}
+          className={`absolute inset-0 bg-[rgba(13,11,31,.5)] backdrop-blur-[4px] transition-opacity duration-400 ${drawer ? "opacity-100" : "opacity-0"}`}
         />
         <div
           role="dialog"
           aria-modal="true"
           aria-label="Menu"
-          className={`absolute inset-y-0 left-0 w-[280px] max-w-[85vw] shadow-modal transition-transform duration-slow ease-out ${drawer ? "translate-x-0" : "-translate-x-full"}`}
+          className={`absolute inset-y-0 left-0 w-[280px] max-w-[85vw] shadow-modal transition-transform duration-400 ease-out ${drawer ? "translate-x-0" : "-translate-x-full"}`}
         >
           {drawer && (
             <>

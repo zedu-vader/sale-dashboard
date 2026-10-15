@@ -132,7 +132,7 @@ export function LeadsTable({ leads }: { leads: LeadRow[] }) {
               </thead>
               <tbody>
                 {rows.map((l) => (
-                  <tr key={l.id} className="h-[60px] border-t border-line transition-colors duration-fast hover:bg-[rgba(109,77,255,.05)]">
+                  <tr key={l.id} className="h-[60px] border-t border-line transition-colors duration-150 hover:bg-[rgba(109,77,255,.05)]">
                     <td className="whitespace-nowrap px-3 pl-[22px] max-lg:pl-[18px]">
                       <span className="flex items-center gap-2.5">
                         <Avatar name={l.name} size={34} />

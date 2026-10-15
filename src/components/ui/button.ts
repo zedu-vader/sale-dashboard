@@ -4,7 +4,7 @@ type Variant = "primary" | "secondary" | "ghost" | "danger";
 type Size = "sm" | "md" | "lg";
 
 const base =
-  "inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap text-small font-bold transition duration-base ease-out disabled:pointer-events-none disabled:opacity-40 disabled:shadow-none";
+  "inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap text-small font-bold transition duration-200 ease-out disabled:pointer-events-none disabled:opacity-40 disabled:shadow-none";
 
 const variants: Record<Variant, string> = {
   primary:
@@ -26,8 +26,8 @@ export function button({ variant = "primary", size = "md" }: { variant?: Variant
 
 /** 40px square icon button, secondary style. */
 export const iconButton =
-  "inline-grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-line bg-surface text-ink transition duration-fast ease-out hover:bg-surface-sunken";
+  "inline-grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-line bg-surface text-ink transition duration-150 ease-out hover:bg-surface-sunken";
 
 /** 32px inline call action in rows. */
 export const callButton =
-  "inline-grid h-8 w-8 shrink-0 place-items-center rounded-md bg-brand-soft text-brand-bright transition duration-base ease-out hover:bg-brand-bright hover:text-white";
+  "inline-grid h-8 w-8 shrink-0 place-items-center rounded-md bg-brand-soft text-brand-bright transition duration-200 ease-out hover:bg-brand-bright hover:text-white";

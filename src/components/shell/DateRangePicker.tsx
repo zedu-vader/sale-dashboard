@@ -20,7 +20,7 @@ export function DateRangePicker({ align = "right" }: { align?: "left" | "right" 
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className="inline-flex h-10 items-center gap-2 rounded-lg border border-line bg-surface px-3.5 text-small font-semibold text-ink transition duration-fast hover:bg-surface-sunken"
+        className="inline-flex h-10 items-center gap-2 rounded-lg border border-line bg-surface px-3.5 text-small font-semibold text-ink transition duration-150 hover:bg-surface-sunken"
       >
         <Calendar size={16} className="text-ink-muted" />
         {period}

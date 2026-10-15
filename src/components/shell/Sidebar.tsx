@@ -55,7 +55,7 @@ export function Sidebar({ newLeadCount, target, mode = "responsive", onNavigate 
         onClick={onNavigate}
         aria-current={n.active ? "page" : undefined}
         aria-label={rail ? `${n.label}${n.count ? `, ${n.count} new` : ""}` : undefined}
-        className={`group relative flex h-11 items-center gap-3 rounded-lg px-3 text-body font-bold transition duration-fast ease-out ${
+        className={`group relative flex h-11 items-center gap-3 rounded-lg px-3 text-body font-bold transition duration-150 ease-out ${
           rail ? "md:max-lg:justify-center md:max-lg:px-0" : ""
         } ${
           n.active
@@ -77,7 +77,7 @@ export function Sidebar({ newLeadCount, target, mode = "responsive", onNavigate 
         {rail && (
           <span
             role="tooltip"
-            className="pointer-events-none absolute left-full z-50 ml-3 hidden whitespace-nowrap rounded-md bg-ink px-2.5 py-2 text-caption text-surface opacity-0 transition-opacity duration-fast group-hover:opacity-100 group-focus-visible:opacity-100 md:max-lg:block"
+            className="pointer-events-none absolute left-full z-50 ml-3 hidden whitespace-nowrap rounded-md bg-ink px-2.5 py-2 text-caption text-surface opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100 md:max-lg:block"
           >
             {n.label}
             {!!n.count && ` · ${formatNumber(n.count)} new`}
@@ -118,7 +118,7 @@ export function Sidebar({ newLeadCount, target, mode = "responsive", onNavigate 
             aria-valuemin={0}
             aria-valuemax={target.goal}
           >
-            <i className="block h-full rounded-full bg-white transition-[width] duration-slow ease-out" style={{ width: `${pct * 100}%` }} />
+            <i className="block h-full rounded-full bg-white transition-[width] duration-400 ease-out" style={{ width: `${pct * 100}%` }} />
           </div>
         </div>
         {rail && <GoalRing pct={pct} label={`${target.done} of ${target.goal} conversions`} />}

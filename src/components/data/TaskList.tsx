@@ -64,7 +64,7 @@ export function TaskList({ tasks: initial }: { tasks: TaskRow[] }) {
               aria-valuemin={0}
               aria-valuemax={tasks.length}
             >
-              <div className="h-full rounded-full bg-gradient-progress transition-[width] duration-slow ease-out" style={{ width: `${(doneCount / tasks.length) * 100}%` }} />
+              <div className="h-full rounded-full bg-gradient-progress transition-[width] duration-400 ease-out" style={{ width: `${(doneCount / tasks.length) * 100}%` }} />
             </div>
           </div>
           <ul>
@@ -77,14 +77,14 @@ export function TaskList({ tasks: initial }: { tasks: TaskRow[] }) {
                   className="flex min-h-11 w-full items-start gap-3 py-3 text-left"
                 >
                   <span
-                    className={`mt-px grid h-5 w-5 shrink-0 place-items-center rounded-[7px] border-2 transition-colors duration-base ${
+                    className={`mt-px grid h-5 w-5 shrink-0 place-items-center rounded-[7px] border-2 transition-colors duration-200 ${
                       t.done ? "border-success bg-success" : "border-indigo-300"
                     }`}
                   >
                     <Check
                       size={12}
                       strokeWidth={4}
-                      className={`text-white transition duration-base ease-out ${t.done ? "scale-100 opacity-100" : "opacity-0 motion-safe:scale-50"}`}
+                      className={`text-white transition duration-200 ease-out ${t.done ? "scale-100 opacity-100" : "opacity-0 motion-safe:scale-50"}`}
                     />
                   </span>
                   <span className="min-w-0 flex-1">

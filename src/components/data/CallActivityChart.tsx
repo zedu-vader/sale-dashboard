@@ -62,11 +62,11 @@ export function CallActivityChart({ chart }: { chart: DashboardData["chart"] }) 
                 <div key={d.label} tabIndex={0} className="group relative flex items-end justify-center gap-[5px] rounded-t-lg outline-offset-0 max-sm:gap-[3px]">
                   <span
                     aria-hidden
-                    className={`absolute inset-0 rounded-t-lg bg-brand-soft transition-opacity duration-fast ${d.today ? "opacity-70" : "opacity-0 group-hover:opacity-40"}`}
+                    className={`absolute inset-0 rounded-t-lg bg-brand-soft transition-opacity duration-150 ${d.today ? "opacity-70" : "opacity-0 group-hover:opacity-40"}`}
                   />
                   <span
                     role="tooltip"
-                    className="pointer-events-none absolute bottom-[calc(100%+8px)] left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md bg-ink px-2.5 py-2 text-[11px] leading-[1.5] text-surface opacity-0 transition-opacity duration-fast group-hover:opacity-100 group-focus-visible:opacity-100"
+                    className="pointer-events-none absolute bottom-[calc(100%+8px)] left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md bg-ink px-2.5 py-2 text-[11px] leading-[1.5] text-surface opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100"
                   >
                     <b>{d.label}</b>
                     <br />
@@ -75,7 +75,7 @@ export function CallActivityChart({ chart }: { chart: DashboardData["chart"] }) 
                   {SERIES.map((s, si) => (
                     <i
                       key={s.key}
-                      className={`relative w-3.5 rounded-t-sm transition-[height] duration-data ease-out max-sm:w-2 ${s.className}`}
+                      className={`relative w-3.5 rounded-t-sm transition-[height] duration-1000 ease-out max-sm:w-2 ${s.className}`}
                       style={{
                         height: grown ? `${(d[s.key] / chart.max) * 100}%` : 0,
                         transitionDelay: grown ? `${(di * SERIES.length + si) * 25}ms` : undefined,

@@ -54,7 +54,7 @@ export function OutcomesDonut({ outcomes, rangeLabel }: { outcomes: DashboardDat
                   stroke={a.color}
                   strokeDasharray={`${drawn ? Math.max(a.len - (arcs.length > 1 ? GAP : 0), 0) : 0} ${C}`}
                   strokeDashoffset={-a.offset}
-                  className="transition-[stroke-dasharray] duration-data ease-out"
+                  className="transition-[stroke-dasharray] duration-1000 ease-out"
                 />
               ))}
             </svg>

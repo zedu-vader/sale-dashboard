@@ -1,8 +1,9 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-/* Zedu Design System §2.3 / §11.1 theme tokens. Semantic colours are RGB triplets so Tailwind can apply opacity. */
+/* Dark mode follows the data-theme attribute on <html> (set before paint in layout.tsx). */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* Zedu Design System §2.3 / §11.1 runtime theme tokens. Semantic colours are RGB triplets for opacity modifiers. */
 :root {
   --bg: #f4f3fb;
   --surface: #ffffff;
@@ -18,9 +19,9 @@
   --warning-rgb: 245 165 36;
   --danger-rgb: 240 68 97;
   --info-rgb: 46 144 250;
-  --shadow-card: 0 1px 2px rgba(21, 18, 58, 0.04), 0 8px 24px -12px rgba(59, 31, 168, 0.18);
-  --shadow-raised: 0 12px 32px -12px rgba(59, 31, 168, 0.28);
-  --shadow-modal: 0 24px 64px -16px rgba(21, 18, 58, 0.35);
+  --elev-card: 0 1px 2px rgba(21, 18, 58, 0.04), 0 8px 24px -12px rgba(59, 31, 168, 0.18);
+  --elev-raised: 0 12px 32px -12px rgba(59, 31, 168, 0.28);
+  --elev-modal: 0 24px 64px -16px rgba(21, 18, 58, 0.35);
   color-scheme: light;
 }
 
@@ -39,10 +40,130 @@
   --warning-rgb: 253 176 34;
   --danger-rgb: 249 112 102;
   --info-rgb: 83 177 253;
-  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 30px -12px rgba(0, 0, 0, 0.6);
-  --shadow-raised: 0 16px 40px -12px rgba(0, 0, 0, 0.7);
-  --shadow-modal: 0 24px 64px -16px rgba(0, 0, 0, 0.8);
+  --elev-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 30px -12px rgba(0, 0, 0, 0.6);
+  --elev-raised: 0 16px 40px -12px rgba(0, 0, 0, 0.7);
+  --elev-modal: 0 24px 64px -16px rgba(0, 0, 0, 0.8);
   color-scheme: dark;
+}
+
+/* Tailwind theme (§11.2). `inline` so utilities reference the runtime tokens above and follow the theme. */
+@theme inline {
+  --font-sans: var(--font-geist-sans), "Geist", system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), "Geist Mono", monospace;
+
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-line: var(--border);
+  --color-ink: var(--text);
+  --color-ink-muted: var(--text-muted);
+  --color-brand: var(--brand);
+  --color-brand-bright: var(--brand-bright);
+  --color-brand-soft: var(--brand-soft);
+  --color-accent: var(--accent);
+  --color-success: rgb(var(--success-rgb));
+  --color-warning: rgb(var(--warning-rgb));
+  --color-danger: rgb(var(--danger-rgb));
+  --color-info: rgb(var(--info-rgb));
+
+  --shadow-card: var(--elev-card);
+  --shadow-raised: var(--elev-raised);
+  --shadow-modal: var(--elev-modal);
+}
+
+@theme {
+  --color-indigo-50: #f4f3fb;
+  --color-indigo-100: #e6e0ff;
+  --color-indigo-300: #b9a8ff;
+  --color-indigo-500: #6d4dff;
+  --color-indigo-700: #3b1fa8;
+  --color-indigo-900: #24107a;
+  --color-indigo-950: #15123a;
+  --color-coral-100: #ffe9e2;
+  --color-coral-500: #ff7a59;
+
+  --text-overline: 11px;
+  --text-overline--line-height: 14px;
+  --text-overline--letter-spacing: 0.06em;
+  --text-overline--font-weight: 700;
+  --text-caption: 12px;
+  --text-caption--line-height: 16px;
+  --text-caption--font-weight: 600;
+  --text-small: 13px;
+  --text-small--line-height: 18px;
+  --text-body: 14px;
+  --text-body--line-height: 20px;
+  --text-h3: 17px;
+  --text-h3--line-height: 24px;
+  --text-h3--letter-spacing: -0.01em;
+  --text-h3--font-weight: 700;
+  --text-h2: 20px;
+  --text-h2--line-height: 28px;
+  --text-h2--letter-spacing: -0.02em;
+  --text-h2--font-weight: 700;
+  --text-h1: 28px;
+  --text-h1--line-height: 34px;
+  --text-h1--letter-spacing: -0.03em;
+  --text-h1--font-weight: 800;
+  --text-h1-sm: 22px;
+  --text-h1-sm--line-height: 28px;
+  --text-h1-sm--letter-spacing: -0.03em;
+  --text-h1-sm--font-weight: 800;
+  --text-display: 32px;
+  --text-display--line-height: 36px;
+  --text-display--letter-spacing: -0.04em;
+  --text-display--font-weight: 800;
+  --text-display-sm: 26px;
+  --text-display-sm--line-height: 30px;
+  --text-display-sm--letter-spacing: -0.04em;
+  --text-display-sm--font-weight: 800;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 18px;
+
+  --shadow-brand: 0 10px 24px -10px rgba(109, 77, 255, 0.8);
+
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  --container-content: 1440px;
+
+  --animate-wave: wave 2s ease-in-out 1;
+  --animate-shimmer: shimmer 1.4s linear infinite;
+
+  @keyframes wave {
+    0%, 100% { transform: rotate(0); }
+    20%, 60% { transform: rotate(16deg); }
+    40%, 80% { transform: rotate(-8deg); }
+  }
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+}
+
+/* Gradients (§2.4) */
+@utility bg-gradient-brand {
+  background-image: linear-gradient(135deg, #6d4dff, #3b1fa8);
+}
+@utility bg-gradient-hero {
+  background-image: linear-gradient(140deg, #24107a 0%, #4b2bd6 55%, #7c5cff 100%);
+}
+@utility bg-gradient-progress {
+  background-image: linear-gradient(90deg, #6d4dff, #ff7a59);
+}
+
+/* Card (§4.1, §4.3): always a 1px border and the card shadow. */
+@utility card {
+  @apply rounded-xl border border-line bg-surface p-[22px] shadow-card max-lg:p-[18px] max-sm:p-4;
+}
+
+/* Skeleton shimmer (§7.10) */
+@utility skeleton {
+  @apply animate-shimmer rounded-md bg-surface-sunken;
+  background-image: linear-gradient(90deg, transparent 0%, rgba(109, 77, 255, 0.08) 50%, transparent 100%);
+  background-size: 200% 100%;
 }
 
 @layer base {
@@ -52,23 +173,16 @@
     transition: background-color 0.3s, color 0.3s;
   }
 
+  /* Tailwind v4 dropped the pointer cursor on buttons. */
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
   /* §10: 2px indigo-300 focus ring at 2px offset on every interactive element. */
   :focus-visible {
     outline: 2px solid #b9a8ff;
     outline-offset: 2px;
-  }
-}
-
-@layer components {
-  .card {
-    @apply rounded-xl border border-line bg-surface p-[22px] shadow-card max-lg:p-[18px] max-sm:p-4;
-  }
-
-  /* Skeleton shimmer (§7.10) */
-  .skeleton {
-    @apply animate-shimmer rounded-md bg-surface-sunken;
-    background-image: linear-gradient(90deg, transparent 0%, rgba(109, 77, 255, 0.08) 50%, transparent 100%);
-    background-size: 200% 100%;
   }
 }
 

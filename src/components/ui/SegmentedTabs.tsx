@@ -18,7 +18,7 @@ export function SegmentedTabs<T extends string>({ label, options, value, onChang
             role="tab"
             aria-selected={on}
             onClick={() => onChange(o.value)}
-            className={`h-7 rounded-[8px] px-3 text-caption font-semibold transition duration-base ease-out ${
+            className={`h-7 rounded-[8px] px-3 text-caption font-semibold transition duration-200 ease-out ${
               on ? "bg-surface text-ink shadow-[0_1px_3px_rgba(0,0,0,.08)]" : "text-ink-muted hover:text-ink"
             }`}
           >

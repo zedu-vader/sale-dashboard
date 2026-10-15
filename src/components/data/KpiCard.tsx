@@ -34,7 +34,7 @@ export function KpiCard({ kpi }: { kpi: Kpi }) {
 
   return (
     <div
-      className={`relative overflow-hidden rounded-xl p-[22px] shadow-card transition-transform duration-base ease-out motion-safe:hover:-translate-y-[3px] max-lg:p-[18px] max-sm:p-4 ${
+      className={`relative overflow-hidden rounded-xl p-[22px] shadow-card transition-transform duration-200 ease-out motion-safe:hover:-translate-y-[3px] max-lg:p-[18px] max-sm:p-4 ${
         hero ? "bg-gradient-hero text-white" : "border border-line bg-surface"
       }`}
     >
