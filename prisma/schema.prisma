@@ -15,6 +15,7 @@ model User {
   image         String?
   accounts      Account[]
   sessions      Session[]
+  tasks         Task[]
 }
 
 model Account {
@@ -49,4 +50,76 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+enum LeadType {
+  INDIVIDUAL
+  BUSINESS
+}
+
+// Pipeline stages in order. LOST is an exit from any stage and needs a lostReason.
+enum LeadStatus {
+  NEW
+  CONTACTED
+  CONNECTED
+  INTERESTED
+  FOLLOW_UP
+  QUALIFIED
+  PROPOSAL
+  WON
+  LOST
+}
+
+enum LostReason {
+  NOT_INTERESTED
+  NO_BUDGET
+  WRONG_CONTACT
+  WENT_WITH_COMPETITOR
+  OTHER
+}
+
+enum CallOutcome {
+  CONNECTED
+  NO_ANSWER
+  NOT_INTERESTED
+  OTHER
+}
+
+model Lead {
+  id           String     @id @default(cuid())
+  name         String
+  phone        String
+  type         LeadType
+  status       LeadStatus
+  lostReason   LostReason?
+  ownerName    String
+  nextAction   String?
+  nextActionAt DateTime?
+  createdAt    DateTime   @default(now())
+  calls        Call[]
+
+  @@index([createdAt])
+}
+
+model Call {
+  id       String      @id @default(cuid())
+  leadId   String?
+  outcome  CallOutcome
+  calledAt DateTime    @default(now())
+  lead     Lead?       @relation(fields: [leadId], references: [id], onDelete: SetNull)
+
+  @@index([calledAt])
+  @@index([leadId])
+}
+
+model Task {
+  id       String   @id @default(cuid())
+  title    String
+  subtitle String?
+  dueAt    DateTime
+  done     Boolean  @default(false)
+  userId   String?
+  user     User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([dueAt])
 }
