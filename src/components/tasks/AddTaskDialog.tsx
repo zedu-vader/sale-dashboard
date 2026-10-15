@@ -131,10 +131,10 @@ export function AddTaskDialog({ open, onClose, onSubmit }: Props) {
         )}
 
         <div className="flex justify-end gap-3 pt-1">
-          <button type="button" onClick={onClose} className="h-10 cursor-pointer rounded-[10px] border border-solid border-line bg-white px-5 text-sm font-semibold text-brand hover:bg-canvas">
+          <button type="button" onClick={onClose} className="inline-flex h-10 cursor-pointer items-center py-0 rounded-[10px] border border-solid border-line bg-white px-5 text-sm font-semibold text-brand hover:bg-canvas">
             Cancel
           </button>
-          <button type="submit" disabled={saving} className="h-10 cursor-pointer rounded-[10px] border border-solid border-brand bg-brand px-5 text-sm font-semibold text-white hover:bg-brand-hover disabled:opacity-60">
+          <button type="submit" disabled={saving} className="inline-flex h-10 cursor-pointer items-center py-0 rounded-[10px] border border-solid border-brand bg-brand px-5 text-sm font-semibold text-white hover:bg-brand-hover disabled:opacity-60">
             {saving ? "Saving…" : "Add Task"}
           </button>
         </div>

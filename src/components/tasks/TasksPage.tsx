@@ -105,7 +105,7 @@ export function TasksPage() {
                 setTab(t.key);
                 setPage(1);
               }}
-              className={`h-[34px] cursor-pointer whitespace-nowrap rounded-lg border border-solid px-4 text-sm ${
+              className={`inline-flex h-[34px] cursor-pointer items-center whitespace-nowrap rounded-lg border border-solid px-4 py-0 text-sm ${
                 tab === t.key
                   ? "border-brand bg-brand font-semibold text-white hover:bg-brand-hover"
                   : "border-line bg-white font-medium text-ink hover:bg-canvas"

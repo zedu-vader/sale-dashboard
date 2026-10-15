@@ -1,11 +1,8 @@
 import "./tailwind.css";
 import Link from "next/link";
-import { CheckSquare, SearchX } from "lucide-react";
+import { Home, SearchX } from "lucide-react";
 
 export const metadata = { title: "Page not found" };
-
-const btn =
-  "inline-flex h-[42px] items-center justify-center gap-2 whitespace-nowrap rounded-[10px] border border-solid px-5 text-sm font-semibold no-underline";
 
 export default function NotFound() {
   return (
@@ -23,14 +20,12 @@ export default function NotFound() {
           <p className="m-0 mt-2 leading-snug text-muted">The page you’re looking for doesn’t exist or may have been moved.</p>
         </div>
 
-        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-          <Link href="/tasks" className={`${btn} border-brand bg-brand text-white hover:bg-brand-hover`}>
-            <CheckSquare size={16} /> Go to Tasks
-          </Link>
-          <Link href="/" className={`${btn} border-line bg-white text-brand hover:bg-canvas`}>
-            Back to home
-          </Link>
-        </div>
+        <Link
+          href="/"
+          className="inline-flex h-[42px] w-full items-center justify-center gap-2 whitespace-nowrap rounded-[10px] border border-solid border-brand bg-brand px-5 text-sm font-semibold text-white no-underline hover:bg-brand-hover sm:w-auto"
+        >
+          <Home size={16} /> Go to home
+        </Link>
       </div>
     </div>
   );
