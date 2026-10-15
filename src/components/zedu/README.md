@@ -80,12 +80,24 @@ They are defined in [`tokens.css`](./tokens.css) and map 1:1 to the Figma variab
 | Menu item, divider, label | `Menu`, `MenuItem`, `MenuDivider`, `MenuLabel`, `MenuHeader`, `Dropdown` | `Dropdown` handles open/close, outside click, Escape and arrow keys. |
 | Menu/New, Menu/User | `NewMenu`, `UserMenu` | Pass a handler per item; omit `onImport` / `onTeam` to hide role-restricted rows. |
 | Logo, Workspace switcher, User trigger, Notifications button | `Logo`, `WorkspaceSwitcher`, `UserTrigger`, `NotificationsButton` | |
-| Top bar, Page header | `TopBar`, `PageHeader` | `TopBar` is responsive (desktop / mobile variants). `PageHeader` takes `actions` and `tabs`. |
+| Top bar, Page header | `TopBar`, `PageHeader` | `TopBar` is responsive (desktop / mobile variants) and focuses search on ⌘K. `PageHeader` takes `actions` and `tabs`. |
+| Select, Textarea | `Select`, `DateField`, `Textarea` | Same frame as `Input` (label, icon, helper/error). `Select` is a native select; `DateField` adds the "Pick a date" placeholder. |
+| Alert | `Alert`, `AlertAction` | `tone` warning · danger · info, optional `actions` (text buttons). Danger is announced as an alert. |
+| Filter chip | `FilterChip` | Default (dashed "+ Field") or `active` ("Field: value" with clear). |
+| Due label, Task type, Task status | `DueLabel`, `TaskTypeTag`, `TaskStatus` | `due` overdue · today · upcoming · done · none. Overdue is derived, so `TaskStatus` is only Pending / Completed. |
+| Lead type, Detail row | `LeadTypeLabel`, `DetailRow` | Individual (indigo dot) / Business (orange dot). `DetailRow` goes inside a `<dl>`. |
+| Activity item | `ActivityItem`, `ActivityBody` | Timeline entry with rail; hide the line on the last item with `last`. |
+| Modal, side panel | `Modal`, `Sheet` | Escape closes, focus moves in and back. `Sheet` docks right below the top bar (Edit details). |
+| Bulk action bar | `BulkActionButton` | For bar actions that open a menu (wrap in `Dropdown`). |
+
+`StatusPill` takes an optional `label` to rename a stage while keeping its colour (the Leads screens show
+Won as "Converted", Lost as "Not interested" and Follow up as "Follow-up"). `SegmentedControl` has `stretch`
+for full-width form fields.
 
 ## Extending
 
 Keep the `z` prefix for new tokens and the ZEDU names for components, and bind new components to `z` tokens only.
 When the Figma page changes, update `tokens.css` first, then the component, then `/design-system`.
 
-Not built yet (listed under "Next" in Figma): dark mode values, select/dropdown field, date picker, side panel,
-toast and modal, empty/loading/error states, bar and donut charts.
+Not built yet (listed under "Next" in Figma): dark mode values, a custom date picker (`DateField` uses the
+browser's), toast, bar and donut charts.

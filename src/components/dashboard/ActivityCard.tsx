@@ -36,7 +36,7 @@ export function ActivityCard({ items }: { items: ActivityItem[] }) {
                 <p className="truncate text-z-small font-medium text-z-fg">{a.name}</p>
                 <p className="truncate text-z-caption text-z-fg-muted">{a.detail}</p>
               </div>
-              {a.status && <StatusPill stage={STAGES[a.status].label} className="max-sm:hidden" />}
+              {a.status && <StatusPill stage={STAGES[a.status].stage} label={STAGES[a.status].label} className="max-sm:hidden" />}
               <time dateTime={a.at} className="w-[120px] shrink-0 text-right text-z-caption text-z-fg-muted max-sm:w-auto">
                 {a.when}
               </time>

@@ -1,12 +1,14 @@
 "use client";
 
-// App shell for the dashboard (Figma 16817:18843): ZEDU sidebar + top bar around the page content.
+// App shell (Figma 16817:18843, 16842:21692): ZEDU sidebar + top bar around every signed-in page.
 // Sidebar: Expanded 248px at ≥1280px, Collapsed 64px rail at 768–1279px (the top-bar toggle overrides
 // either), and a drawer below 768px.
 
 import { CircleHelp, Contact, LayoutDashboard, Phone, Search as SearchIcon, SquareCheck, UserRound, X } from "lucide-react";
 import { signOut } from "next-auth/react";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
+import { initialsOf } from "@/lib/status";
 import {
   Dropdown,
   IconButton,
@@ -33,18 +35,10 @@ type Props = {
   children: ReactNode;
 };
 
-const initialsOf = (name: string) =>
-  name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((p) => p[0]!.toUpperCase())
-    .join("") || "?";
-
-// Leads, Calls, Tasks and Contacts pages aren't built yet, so those items don't navigate.
+// Calls, Tasks and Contacts pages aren't built yet, so those items don't navigate.
 const NAV = [
-  { label: "Dashboard", href: "/", icon: <LayoutDashboard aria-hidden />, active: true },
-  { label: "Leads", href: "#", icon: <UserRound aria-hidden /> },
+  { label: "Dashboard", href: "/", icon: <LayoutDashboard aria-hidden /> },
+  { label: "Leads", href: "/leads", icon: <UserRound aria-hidden /> },
   { label: "Calls", href: "#", icon: <Phone aria-hidden /> },
   { label: "Tasks", href: "#", icon: <SquareCheck aria-hidden />, tasks: true },
   { label: "Contacts", href: "#", icon: <Contact aria-hidden /> },
@@ -62,8 +56,13 @@ function useWideScreen() {
   return wide;
 }
 
-export function DashboardShell({ user, openTaskCount, unread, children }: Props) {
+const isActive = (href: string, pathname: string) =>
+  href !== "#" && (href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`));
+
+export function AppShell({ user, openTaskCount, unread, children }: Props) {
   const wide = useWideScreen();
+  const pathname = usePathname();
+  const router = useRouter();
   // null = follow the viewport; the top-bar toggle pins it until the viewport class changes.
   const [pinned, setPinned] = useState<boolean | null>(null);
   const [drawer, setDrawer] = useState(false);
@@ -118,7 +117,7 @@ export function DashboardShell({ user, openTaskCount, unread, children }: Props)
             label={n.label}
             href={n.href}
             icon={n.icon}
-            active={n.active}
+            active={isActive(n.href, pathname)}
             count={n.tasks && openTaskCount > 0 ? openTaskCount : undefined}
             onClick={onNavigate}
           />
@@ -136,7 +135,7 @@ export function DashboardShell({ user, openTaskCount, unread, children }: Props)
           unread={unread}
           onToggleSidebar={() => setPinned(!collapsed)}
           onOpenMenu={() => setDrawer(true)}
-          newMenu={<NewMenu onImport={() => {}} />}
+          newMenu={<NewMenu onAddLead={() => router.push("/leads?new=1")} onImport={() => {}} />}
         />
         <main className="min-h-0 flex-1 overflow-y-auto">{children}</main>
       </div>
