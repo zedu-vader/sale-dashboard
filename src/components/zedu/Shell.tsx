@@ -21,7 +21,7 @@ import {
   UserPlus,
   UserRound,
 } from "lucide-react";
-import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
+import { forwardRef, useEffect, useRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { Avatar } from "./Avatar";
 import { Button, IconButton } from "./Button";
 import { cx } from "./cx";
@@ -226,6 +226,20 @@ export function TopBar({
   newMenu = <NewMenu />,
   className,
 }: TopBarProps) {
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  // ⌘K / Ctrl+K focuses the global search.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        searchRef.current?.focus();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
+
   return (
     <header
       className={cx(
@@ -248,7 +262,7 @@ export function TopBar({
           onSearch?.(String(new FormData(e.currentTarget).get("q") ?? ""));
         }}
       >
-        <Search name="q" variant="outline" placeholder="Search leads, contacts, calls…" shortcut="⌘K" className="w-80" />
+        <Search ref={searchRef} name="q" variant="outline" placeholder="Search leads, contacts, calls…" shortcut="⌘K" className="w-80" />
       </form>
       <div className="flex-1" />
       <IconButton label="Search" className="md:hidden">

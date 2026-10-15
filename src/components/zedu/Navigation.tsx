@@ -28,7 +28,7 @@ export function Sidebar({ collapsed = false, header, footer, className, children
       <nav
         aria-label="Main"
         className={cx(
-          "relative flex h-full shrink-0 flex-col gap-4 overflow-y-auto border-r border-z-line bg-z-app p-3",
+          "relative flex h-full shrink-0 flex-col gap-4 overflow-y-auto overflow-x-hidden border-r border-z-line bg-z-app p-3",
           collapsed ? "w-16 items-center" : "w-[248px]",
           className,
         )}
@@ -77,7 +77,7 @@ export function NavItem({ icon, label, href, onClick, active, count }: NavItemPr
   );
   const shared = { className, title: collapsed ? label : undefined, "aria-current": active ? ("page" as const) : undefined };
   return href ? (
-    <Link href={href} {...shared}>
+    <Link href={href} onClick={onClick} {...shared}>
       {content}
     </Link>
   ) : (
