@@ -33,6 +33,24 @@ export async function checkMasterKey(req: Request): Promise<boolean> {
 
 export const generateMasterKey = () => `zmk_${randomBytes(32).toString("base64url")}`;
 
+export async function hasStoredMasterKey() {
+  return (await prisma.masterKey.count({ where: { id: "default" } })) > 0;
+}
+
+/**
+ * First-ever claim: creates the key only if none exists. The primary-key conflict makes concurrent claims
+ * safe, so exactly one caller wins. Returns false when a key was already stored.
+ */
+export async function claimMasterKey(key: string): Promise<boolean> {
+  try {
+    await prisma.masterKey.create({ data: { id: "default", keyHash: await hashPassword(key) } });
+    return true;
+  } catch (err) {
+    if ((err as { code?: string }).code === "P2002") return false;
+    throw err;
+  }
+}
+
 /** Stores (or replaces) the master key. Only a hash is kept, so the plaintext can't be recovered later. */
 export async function storeMasterKey(key: string, rotatedById: string | null) {
   const keyHash = await hashPassword(key);

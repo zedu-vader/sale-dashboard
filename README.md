@@ -35,13 +35,12 @@ A bootstrap/admin key for setup and recovery, sent as `x-master-key: <key>` (or 
 ```bash
 # Create an admin invite (role defaults to ADMIN; optional email, maxUses 1-10), then open /setup with the code
 curl -X POST $APP_URL/api/admin/bootstrap -H "x-master-key: $KEY" -H "Content-Type: application/json" -d '{}'
-
-# Rotate the key: omit newKey to get a generated one (shown once; only a hash is stored)
-curl -X PUT $APP_URL/api/admin/master-key -H "x-master-key: $KEY" -H "Content-Type: application/json" -d '{}'
 ```
 
-Until a key is stored in the database, the `MASTER_KEY` env value (32+ chars) is accepted. The first `PUT` stores a hashed key
-and the env value stops working. A signed-in admin can also rotate the key (`PUT` with their session, no header).
+Setting and rotating the key has its own endpoint under `src/app/api/admin/`: `PUT` with an optional `{"newKey": "..."}`
+(32+ chars; omit it to get a generated key, shown once; only a hash is stored). The first call, while no key is stored,
+needs no credentials and claims the key; after that it needs the current key or a signed-in admin session. Until a key is
+stored, the optional `MASTER_KEY` env value is also accepted by `bootstrap`; once one is stored the env value stops working.
 
 Set `AUTH_SECRET` (32+ random chars) and the `SMTP_*` variables from `.env.example`. Without `SMTP_HOST`, emails are printed to the server log.
 
