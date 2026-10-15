@@ -12,6 +12,11 @@ npm run db:seed           # optional: sample leads, calls and tasks (wipes those
 npm run dev
 ```
 
+## Design system
+
+ZEDU v2 components and tokens live in `src/components/zedu` (see its [README](src/components/zedu/README.md)).
+Browse them at `/design-system` while running `npm run dev`.
+
 ## Deploy (Coolify)
 
 - Build pack: Dockerfile. The container runs `prisma migrate deploy` on start.

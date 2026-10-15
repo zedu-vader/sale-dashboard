@@ -1,4 +1,6 @@
 @import "tailwindcss";
+/* ZEDU design system v2 (z-prefixed tokens, see src/components/zedu/README.md). */
+@import "../components/zedu/tokens.css";
 
 /* Dark mode follows the data-theme attribute on <html> (set before paint in layout.tsx). */
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
