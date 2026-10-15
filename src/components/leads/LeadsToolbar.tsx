@@ -6,10 +6,13 @@ type LeadsToolbarProps = {
   status: string;
   type: string;
   owner: string;
+  owners: string[];
+  hasActiveFilters: boolean;
   onSearchChange: (value: string) => void;
   onStatusChange: (value: string) => void;
   onTypeChange: (value: string) => void;
   onOwnerChange: (value: string) => void;
+  onClearFilters: () => void;
 };
 
 export function LeadsToolbar(props: LeadsToolbarProps) {
@@ -35,13 +38,16 @@ export function LeadsToolbar(props: LeadsToolbarProps) {
       </select>
       <select className="h-10 w-full rounded-[7px] border border-[#e7e3ec] bg-white px-3 pr-8 text-xs text-[#504b5b] outline-none max-[760px]:w-[calc(50%_-_5px)] max-[500px]:w-full" aria-label="Filter by owner" value={props.owner} onChange={(event) => props.onOwnerChange(event.target.value)}>
         <option>All Owners</option>
-        <option>You</option>
-        <option>Sarah</option>
-        <option>Femi</option>
-        <option>Grace</option>
-        <option>Toluw</option>
+        {props.owners.map((owner) => <option key={owner}>{owner}</option>)}
       </select>
-      <button type="button" className="grid h-10 w-10 place-items-center rounded-[7px] border border-[#e7e3ec] bg-transparent p-0 text-[#655f70] hover:bg-[#f7f5fb] max-[760px]:hidden" aria-label="More filters">
+      <button
+        type="button"
+        className="grid h-10 w-10 place-items-center rounded-[7px] border border-[#e7e3ec] bg-transparent p-0 text-[#655f70] hover:bg-[#f7f5fb] disabled:cursor-not-allowed disabled:opacity-35 max-[760px]:hidden"
+        aria-label="Clear all filters"
+        title="Clear all filters"
+        disabled={!props.hasActiveFilters}
+        onClick={props.onClearFilters}
+      >
         <ListFilter size={18} />
       </button>
     </div>

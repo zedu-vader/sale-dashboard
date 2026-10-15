@@ -9,6 +9,8 @@ import { LeadsToolbar } from "./LeadsToolbar";
 import { Sidebar } from "./Sidebar";
 import { StatCard } from "./StatCard";
 
+const PAGE_SIZE = 10;
+
 export function LeadsDashboard() {
   const [leads, setLeads] = useState(initialLeads);
   const [search, setSearch] = useState("");
@@ -30,20 +32,45 @@ export function LeadsDashboard() {
       .sort((a, b) => ascending ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name));
   }, [ascending, leads, owner, search, status, type]);
 
+  const owners = useMemo(
+    () => Array.from(new Set(leads.map((lead) => lead.owner))).sort((a, b) => a.localeCompare(b)),
+    [leads],
+  );
+  const pageCount = Math.max(1, Math.ceil(filteredLeads.length / PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount);
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+  const pageLeads = filteredLeads.slice(pageStart, pageStart + PAGE_SIZE);
+  const pageNumbers = Array.from({ length: pageCount }, (_, index) => index + 1);
+  const hasActiveFilters = search.trim() !== "" || status !== "All Status" || type !== "All Lead Type" || owner !== "All Owners";
+
+  function changeSearch(value: string) { setSearch(value); setPage(1); }
+  function changeStatus(value: string) { setStatus(value); setPage(1); }
+  function changeType(value: string) { setType(value); setPage(1); }
+  function changeOwner(value: string) { setOwner(value); setPage(1); }
+
+  function clearFilters() {
+    setSearch("");
+    setStatus("All Status");
+    setType("All Lead Type");
+    setOwner("All Owners");
+    setPage(1);
+  }
+
   function toggleLead(id: number) {
     setSelected((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
   }
 
   function toggleAll() {
-    const visibleIds = filteredLeads.map((lead) => lead.id);
+    const visibleIds = pageLeads.map((lead) => lead.id);
     const allSelected = visibleIds.every((id) => selected.includes(id));
     setSelected(allSelected ? selected.filter((id) => !visibleIds.includes(id)) : Array.from(new Set([...selected, ...visibleIds])));
   }
 
   function addLead(data: { name: string; phone: string; type: "Individual" | "Business" }) {
     const initials = data.name.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
-    const newLead: Lead = { id: Date.now(), name: data.name, initials, phone: data.phone, type: data.type, status: "New", lastCall: "—", nextAction: "Call", nextActionDate: "Today", owner: "You", avatarTone: "violet" };
+    const newLead: Lead = { id: Date.now(), name: data.name, initials, phone: data.phone, type: data.type, status: "New", lastCall: "-", nextAction: "Call", nextActionDate: "Today", owner: "You", avatarTone: "violet" };
     setLeads((current) => [newLead, ...current]);
+    clearFilters();
     setModalOpen(false);
   }
 
@@ -57,21 +84,21 @@ export function LeadsDashboard() {
         </header>
 
         <section className="mt-[18px] grid grid-cols-4 gap-3.5 max-[1080px]:grid-cols-2 max-[500px]:grid-cols-1" aria-label="Lead metrics">
-          <StatCard label="Total Leads" value={248 + leads.length - initialLeads.length} growth="12%" icon={UsersRound} tone="purple" />
-          <StatCard label="Contacted" value={182} growth="18%" icon={PhoneCall} tone="blue" />
-          <StatCard label="In Progress" value={96} growth="10%" icon={Hourglass} tone="orange" />
-          <StatCard label="Converted" value={28} growth="8%" icon={CheckCircle2} tone="pink" />
+          <StatCard label="Total Leads" value={leads.length} growth="12%" icon={UsersRound} tone="purple" />
+          <StatCard label="Contacted" value={leads.filter((lead) => lead.lastCall !== "-").length} growth="18%" icon={PhoneCall} tone="blue" />
+          <StatCard label="In Progress" value={leads.filter((lead) => ["Interested", "Follow up", "Connected"].includes(lead.status)).length} growth="10%" icon={Hourglass} tone="orange" />
+          <StatCard label="Converted" value={leads.filter((lead) => lead.status === "Converted").length} growth="8%" icon={CheckCircle2} tone="pink" />
         </section>
 
         <section className="mt-[17px] overflow-hidden rounded-[11px] border border-[#efecf4] bg-white shadow-[0_3px_14px_rgb(32_19_66_/_3%)]" aria-label="Leads list">
-          <LeadsToolbar search={search} status={status} type={type} owner={owner} onSearchChange={setSearch} onStatusChange={setStatus} onTypeChange={setType} onOwnerChange={setOwner} />
-          <LeadsTable leads={filteredLeads} selected={selected} onToggle={toggleLead} onToggleAll={toggleAll} onSort={() => setAscending((value) => !value)} />
+          <LeadsToolbar search={search} status={status} type={type} owner={owner} owners={owners} hasActiveFilters={hasActiveFilters} onSearchChange={changeSearch} onStatusChange={changeStatus} onTypeChange={changeType} onOwnerChange={changeOwner} onClearFilters={clearFilters} />
+          <LeadsTable leads={pageLeads} selected={selected} onToggle={toggleLead} onToggleAll={toggleAll} onSort={() => { setAscending((value) => !value); setPage(1); }} />
           <footer className="flex min-h-[65px] items-center justify-between gap-[18px] border-t border-[#f1eef4] px-[17px] py-3 max-[500px]:flex-col max-[500px]:items-start">
-            <span className="text-[11px] text-[#787382]">Showing {filteredLeads.length ? 1 : 0}–{filteredLeads.length} of {filteredLeads.length === leads.length ? 248 + leads.length - initialLeads.length : filteredLeads.length} leads</span>
+            <span className="text-[11px] text-[#787382]" aria-live="polite">Showing {filteredLeads.length ? pageStart + 1 : 0}-{Math.min(pageStart + PAGE_SIZE, filteredLeads.length)} of {filteredLeads.length} leads{hasActiveFilters ? ` (filtered from ${leads.length})` : ""}</span>
             <div className="flex items-center gap-1">
-              <button className="grid h-[31px] w-[31px] place-items-center rounded-md border-0 bg-transparent p-0 text-[11px] text-[#575161] hover:bg-[#f3effa]" type="button" aria-label="Previous page" onClick={() => setPage((value) => Math.max(1, value - 1))}><ChevronLeft size={16} /></button>
-              {[1, 2, 3, 4, 5].map((item) => <button type="button" key={item} className={`grid h-[31px] w-[31px] place-items-center rounded-md border-0 p-0 text-[11px] ${page === item ? "bg-[#4b20b8] text-white shadow-[0_3px_8px_rgb(75_32_184_/_18%)] hover:bg-[#3c169d]" : "bg-transparent text-[#575161] hover:bg-[#f3effa]"}`} onClick={() => setPage(item)}>{item}</button>)}
-              <button className="grid h-[31px] w-[31px] place-items-center rounded-md border-0 bg-transparent p-0 text-[11px] text-[#575161] hover:bg-[#f3effa]" type="button" aria-label="Next page" onClick={() => setPage((value) => Math.min(5, value + 1))}><ChevronRight size={16} /></button>
+              <button className="grid h-[31px] w-[31px] place-items-center rounded-md border-0 bg-transparent p-0 text-[11px] text-[#575161] hover:bg-[#f3effa] disabled:cursor-not-allowed disabled:opacity-30" type="button" aria-label="Previous page" disabled={currentPage === 1} onClick={() => setPage((value) => Math.max(1, value - 1))}><ChevronLeft size={16} /></button>
+              {pageNumbers.map((item) => <button type="button" key={item} aria-label={`Page ${item}`} aria-current={currentPage === item ? "page" : undefined} className={`grid h-[31px] w-[31px] place-items-center rounded-md border-0 p-0 text-[11px] ${currentPage === item ? "bg-[#4b20b8] text-white shadow-[0_3px_8px_rgb(75_32_184_/_18%)] hover:bg-[#3c169d]" : "bg-transparent text-[#575161] hover:bg-[#f3effa]"}`} onClick={() => setPage(item)}>{item}</button>)}
+              <button className="grid h-[31px] w-[31px] place-items-center rounded-md border-0 bg-transparent p-0 text-[11px] text-[#575161] hover:bg-[#f3effa] disabled:cursor-not-allowed disabled:opacity-30" type="button" aria-label="Next page" disabled={currentPage === pageCount} onClick={() => setPage((value) => Math.min(pageCount, value + 1))}><ChevronRight size={16} /></button>
             </div>
           </footer>
         </section>
