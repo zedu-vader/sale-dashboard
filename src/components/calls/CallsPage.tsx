@@ -13,7 +13,7 @@ const defaultFilters: Filters = { q: "", leadId: "", callerId: "", status: "", o
 const button = "inline-flex h-9 items-center justify-center gap-2 rounded-md border border-[#e1e1e5] bg-white px-3 text-[13px] font-medium text-[#18181c] hover:bg-[#fafafa] disabled:cursor-not-allowed disabled:opacity-50";
 const selectClass = "h-9 min-w-0 rounded-md border border-[#e1e1e5] bg-white px-2.5 text-[12px] text-[#52525c] outline-none focus-visible:ring-2 focus-visible:ring-[#b9a8ff]";
 
-export function CallsPage({ leads, callers, callerName }: { leads: LeadOption[]; callers: CallerOption[]; callerName: string }) {
+export function CallsPage({ leads, callers, callerName, previewMode = false, previewData = [] }: { leads: LeadOption[]; callers: CallerOption[]; callerName: string; previewMode?: boolean; previewData?: CallRecord[] }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [filters, setFilters] = useState(defaultFilters);
@@ -33,7 +33,7 @@ export function CallsPage({ leads, callers, callerName }: { leads: LeadOption[];
     if (searchParams.get("log") === "1") {
       setLogLeadId(searchParams.get("leadId") ?? "");
       setLogging(true);
-      router.replace("/calls", { scroll: false });
+      router.replace(previewMode ? "/calls/preview" : "/calls", { scroll: false });
     }
   }, [router, searchParams]);
 
@@ -50,7 +50,35 @@ export function CallsPage({ leads, callers, callerName }: { leads: LeadOption[];
     return params.toString();
   }, [filters, cursor]);
 
+  const previewItems = useMemo(() => {
+    const from = filters.from ? new Date(`${filters.from}T00:00:00`) : null;
+    const to = filters.to ? new Date(`${filters.to}T00:00:00`) : null;
+    if (to) to.setDate(to.getDate() + 1);
+    const q = filters.q.trim().toLocaleLowerCase();
+    return previewData.filter((call) => {
+      const haystack = [call.lead?.name, call.lead?.phone, call.caller?.name, call.callerName, call.notes, call.nextAction, callOutcomeLabel(call)].join(" ").toLocaleLowerCase();
+      const calledAt = new Date(call.calledAt);
+      return (!q || haystack.includes(q))
+        && (!filters.leadId || call.leadId === filters.leadId)
+        && (!filters.callerId || call.callerId === filters.callerId)
+        && (!filters.status || call.connectionStatus === filters.status)
+        && (!filters.outcome || call.outcome === filters.outcome)
+        && (!from || calledAt >= from)
+        && (!to || calledAt < to);
+    });
+  }, [filters, previewData]);
+
   useEffect(() => {
+    if (previewMode) {
+      setLoading(true); setError("");
+      const offset = cursor ? Number(cursor) : 0;
+      setData({
+        items: previewItems.slice(offset, offset + 25),
+        nextCursor: offset + 25 < previewItems.length ? String(offset + 25) : null,
+      });
+      setLoading(false);
+      return;
+    }
     const abort = new AbortController();
     const timer = window.setTimeout(() => {
       setLoading(true); setError("");
@@ -60,7 +88,7 @@ export function CallsPage({ leads, callers, callerName }: { leads: LeadOption[];
         .finally(() => { if (!abort.signal.aborted) setLoading(false); });
     }, filters.q ? 250 : 0);
     return () => { window.clearTimeout(timer); abort.abort(); };
-  }, [query, refresh]);
+  }, [query, refresh, previewMode, previewItems, cursor]);
 
   const updateFilter = useCallback((patch: Partial<Filters>) => {
     setFilters((current) => ({ ...current, ...patch }));
@@ -72,6 +100,7 @@ export function CallsPage({ leads, callers, callerName }: { leads: LeadOption[];
 
   const hasFilters = Object.values(filters).some(Boolean);
   return <section className="calls-theme text-[#18181c]">
+    {previewMode && <div role="status" className="mb-4 rounded-md border border-[#f3d38a] bg-[#fff8e6] px-3 py-2.5 text-[13px] font-medium text-[#704d00]">Preview mode — changes are not saved. This page uses sample data only.</div>}
     <div className="mb-5 flex flex-wrap items-end justify-between gap-3 border-b border-[#ebebee] pb-4 sm:mb-6 sm:pb-5">
       <div><h1 className="m-0 text-[24px] font-semibold leading-8 tracking-[-.03em]">Calls</h1><p className="m-0 mt-1 max-w-[620px] text-[13px] leading-5 text-[#71717c]">Outbound calls logged by the team. Records are entered manually after calls are made.</p></div>
       <button type="button" onClick={() => { setLogLeadId(""); setLogging(true); }} className="inline-flex h-9 items-center justify-center gap-2 rounded-md bg-[#18181c] px-3.5 text-[13px] font-medium text-white hover:bg-[#303036]"><Phone size={15} />Log call</button>
@@ -101,7 +130,7 @@ export function CallsPage({ leads, callers, callerName }: { leads: LeadOption[];
         <table className="w-full min-w-[940px] border-collapse text-left">
           <thead className="bg-[#fafafa]"><tr>{["Lead or contact", "Caller", "Date and time", "Connection", "Outcome", "Duration", "Next action", ""].map((title, i) => <th key={`${title}-${i}`} scope="col" className="h-10 border-b border-[#ebebee] px-3 text-[10px] font-medium uppercase tracking-[.08em] text-[#71717c]">{title}</th>)}</tr></thead>
           <tbody>{!loading && data?.items.map((call) => <tr key={call.id} className="h-[52px] border-b border-[#ebebee] last:border-0 hover:bg-[#fafafa]">
-            <td className="max-w-[210px] px-3"><LeadLink call={call} /></td><td className="max-w-[140px] truncate px-3 text-[12px] text-[#52525c]">{call.caller?.name ?? call.callerName ?? "—"}</td>
+            <td className="max-w-[210px] px-3"><LeadLink call={call} previewMode={previewMode} onPreviewLead={() => updateFilter({ leadId: call.leadId ?? "" })} /></td><td className="max-w-[140px] truncate px-3 text-[12px] text-[#52525c]">{call.caller?.name ?? call.callerName ?? "—"}</td>
             <td className="whitespace-nowrap px-3 text-[12px] text-[#52525c]">{formatCallDate(call.calledAt)}</td><td className="px-3"><Status value={call.connectionStatus} /></td><td className="px-3 text-[12px] text-[#52525c]">{callOutcomeLabel(call)}</td><td className="whitespace-nowrap px-3 text-[12px] text-[#52525c]">{formatDuration(call.durationSeconds)}</td>
             <td className="max-w-[190px] px-3"><span className="block truncate text-[12px] text-[#52525c]">{call.nextAction ? `${call.nextAction}${call.followUpAt ? ` · ${new Date(call.followUpAt).toLocaleDateString("en", { month: "short", day: "numeric" })}` : ""}` : "—"}</span></td>
             <td className="px-3"><button type="button" className="text-[12px] font-medium text-[#18181c] underline underline-offset-2" onClick={() => setDetail(call)}>View</button></td>
@@ -109,7 +138,7 @@ export function CallsPage({ leads, callers, callerName }: { leads: LeadOption[];
         </table>
       </div>
       <div className="divide-y divide-[#ebebee] md:hidden">{!loading && data?.items.map((call) => <article key={call.id} className="p-4">
-        <div className="flex items-start justify-between gap-3"><div className="min-w-0"><LeadLink call={call} /><p className="m-0 mt-1 text-[12px] text-[#71717c]">{call.caller?.name ?? call.callerName ?? "—"} · {formatCallDate(call.calledAt)}</p></div><button type="button" className="shrink-0 text-[12px] font-medium underline underline-offset-2" onClick={() => setDetail(call)}>Details</button></div>
+        <div className="flex items-start justify-between gap-3"><div className="min-w-0"><LeadLink call={call} previewMode={previewMode} onPreviewLead={() => updateFilter({ leadId: call.leadId ?? "" })} /><p className="m-0 mt-1 text-[12px] text-[#71717c]">{call.caller?.name ?? call.callerName ?? "—"} · {formatCallDate(call.calledAt)}</p></div><button type="button" className="shrink-0 text-[12px] font-medium underline underline-offset-2" onClick={() => setDetail(call)}>Details</button></div>
         <div className="mt-3 flex flex-wrap items-center gap-2"><Status value={call.connectionStatus} /><span className="rounded-full bg-[#f4f4f5] px-2 py-1 text-[11px] text-[#52525c]">{callOutcomeLabel(call)}</span><span className="inline-flex items-center gap-1 text-[11px] text-[#71717c]"><Clock3 size={12} />{formatDuration(call.durationSeconds)}</span></div>
         {call.nextAction && <p className="m-0 mt-2 text-[12px] text-[#52525c]">Next: {call.nextAction}{call.followUpAt ? ` · ${new Date(call.followUpAt).toLocaleDateString()}` : ""}</p>}
       </article>)}</div>
@@ -118,14 +147,15 @@ export function CallsPage({ leads, callers, callerName }: { leads: LeadOption[];
       {!loading && !error && data?.items.length === 0 && <div className="px-5 py-12 text-center"><span className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-[#f4f4f5] text-[#52525c]"><Phone size={19} /></span><h2 className="mb-1 mt-3 text-[15px] font-semibold">{hasFilters ? "No calls match these filters" : "No calls logged yet"}</h2><p className="mx-auto max-w-sm text-[12px] leading-5 text-[#71717c]">{hasFilters ? "Try changing or clearing your filters." : "Calls are entered manually after they are made through your team's phone system."}</p>{!hasFilters && <button type="button" className="mt-3 inline-flex h-9 items-center gap-2 rounded-md bg-[#18181c] px-3.5 text-[13px] font-medium text-white" onClick={() => { setLogLeadId(""); setLogging(true); }}><Plus size={14} />Log call</button>}</div>}
       {!loading && !error && data?.items.length !== 0 && <div className="flex items-center justify-between border-t border-[#ebebee] px-3 py-2.5 sm:px-4"><span className="text-[11px] text-[#71717c]">Showing {data?.items.length ?? 0} calls</span><div className="flex gap-2"><button type="button" className={button} disabled={!cursorStack.length || loading} onClick={() => { setCursor(cursorStack.at(-1) ?? null); setCursorStack((stack) => stack.slice(0, -1)); }}><ChevronLeft size={14} />Previous</button><button type="button" className={button} disabled={!data?.nextCursor || loading} onClick={() => { if (data?.nextCursor) { setCursorStack((stack) => [...stack, cursor]); setCursor(data.nextCursor); } }}>Next<ChevronRight size={14} /></button></div></div>}
     </div>
-    <CallLogDialog open={logging} leads={leads} callerName={callerName} initialLeadId={logLeadId} onClose={() => setLogging(false)} onSaved={savedCall} />
-    <CallTaskDialog call={taskCall} open={Boolean(taskCall)} onClose={() => setTaskCall(null)} onSaved={savedTask} />
+    <CallLogDialog open={logging} leads={leads} callerName={callerName} initialLeadId={logLeadId} previewMode={previewMode} onClose={() => setLogging(false)} onSaved={savedCall} />
+    <CallTaskDialog call={taskCall} open={Boolean(taskCall)} previewMode={previewMode} onClose={() => setTaskCall(null)} onSaved={savedTask} />
     <CallDetailsDialog call={detail} onClose={() => setDetail(null)} onCreateTask={(call) => { setDetail(null); setTaskCall(call); }} />
   </section>;
 }
 
-function LeadLink({ call }: { call: CallRecord }) {
+function LeadLink({ call, previewMode = false, onPreviewLead }: { call: CallRecord; previewMode?: boolean; onPreviewLead?: () => void }) {
   if (!call.lead) return <span className="text-[12px] text-[#71717c]">Lead unavailable</span>;
+  if (previewMode) return <button type="button" onClick={onPreviewLead} className="block max-w-full truncate text-left text-[13px] font-medium text-[#18181c] underline decoration-transparent underline-offset-2 hover:decoration-current">{call.lead.name}<span className="ml-1.5 text-[11px] font-normal text-[#71717c]">{call.lead.phone}</span></button>;
   return <Link href={`/leads/${encodeURIComponent(call.lead.id)}`} className="block truncate text-[13px] font-medium text-[#18181c] underline decoration-transparent underline-offset-2 hover:decoration-current">{call.lead.name}<span className="ml-1.5 text-[11px] font-normal text-[#71717c]">{call.lead.phone}</span></Link>;
 }
 

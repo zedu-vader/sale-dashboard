@@ -50,8 +50,8 @@ function localDateTime(value?: string | null) {
   return date.toISOString().slice(0, 16);
 }
 
-export function CallLogDialog({ open, leads, callerName, initialLeadId = "", onClose, onSaved }: {
-  open: boolean; leads: LeadOption[]; callerName: string; initialLeadId?: string; onClose: () => void; onSaved: () => void;
+export function CallLogDialog({ open, leads, callerName, initialLeadId = "", previewMode = false, onClose, onSaved }: {
+  open: boolean; leads: LeadOption[]; callerName: string; initialLeadId?: string; previewMode?: boolean; onClose: () => void; onSaved: () => void;
 }) {
   const [leadId, setLeadId] = useState("");
   const [calledAt, setCalledAt] = useState("");
@@ -79,6 +79,7 @@ export function CallLogDialog({ open, leads, callerName, initialLeadId = "", onC
 
   async function submit(event: FormEvent) {
     event.preventDefault();
+    if (previewMode) return;
     if (!leadId) return setError("Select an existing lead.");
     if (!calledAt) return setError("Choose when the call took place.");
     if (duration && (!Number.isFinite(Number(duration)) || Number(duration) < 0 || !Number.isInteger(Number(duration)))) return setError("Duration must be a nonnegative whole number of seconds.");
@@ -97,8 +98,9 @@ export function CallLogDialog({ open, leads, callerName, initialLeadId = "", onC
     finally { setSaving(false); }
   }
 
-  return <LocalDialog open={open} onClose={onClose} title="Log call" subtitle="Record an outbound call already made through your phone system." footer={<><button type="button" className={secondary} onClick={onClose}>Cancel</button><button type="submit" form="call-log-form" disabled={saving} className={primary}>{saving ? "Saving…" : "Save call"}</button></>}>
+  return <LocalDialog open={open} onClose={onClose} title="Log call" subtitle="Record an outbound call already made through your phone system." footer={<><button type="button" className={secondary} onClick={onClose}>Cancel</button><button type="submit" form="call-log-form" disabled={saving || previewMode} className={primary}>{previewMode ? "Preview only" : saving ? "Saving…" : "Save call"}</button></>}>
     <form id="call-log-form" onSubmit={submit} className="flex flex-col gap-4">
+      {previewMode && <p className="m-0 rounded-md bg-[#fff8e6] px-3 py-2 text-[12px] text-[#704d00]">Preview mode — this call will not be saved.</p>}
       <label className={field}>Lead <span className="text-[#b42318]">*</span><select required value={leadId} onChange={(e) => setLeadId(e.target.value)} className={control}><option value="">Select a lead</option>{leads.map((lead) => <option key={lead.id} value={lead.id}>{lead.name} · {lead.phone}</option>)}</select></label>
       <label className={field}>Caller<div className="flex h-10 items-center rounded-md border border-[#e1e1e5] bg-[#fafafa] px-3 text-[13px] font-normal text-[#52525c]">{callerName}</div></label>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -120,7 +122,7 @@ export function CallLogDialog({ open, leads, callerName, initialLeadId = "", onC
   </LocalDialog>;
 }
 
-export function CallTaskDialog({ call, open, onClose, onSaved }: { call: CallRecord | null; open: boolean; onClose: () => void; onSaved: () => void }) {
+export function CallTaskDialog({ call, open, previewMode = false, onClose, onSaved }: { call: CallRecord | null; open: boolean; previewMode?: boolean; onClose: () => void; onSaved: () => void }) {
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
   const [type, setType] = useState<TaskKind>("Call");
@@ -130,6 +132,7 @@ export function CallTaskDialog({ call, open, onClose, onSaved }: { call: CallRec
   useEffect(() => { if (open) { setTitle(call?.nextAction ?? ""); setNotes(call?.notes ?? ""); setType("Call"); setDueAt(localDateTime(call?.followUpAt)); setError(""); } }, [open, call]);
   async function submit(event: FormEvent) {
     event.preventDefault();
+    if (previewMode) return;
     if (!call) return;
     if (!title.trim()) return setError("Enter a task title.");
     if (!dueAt) return setError("Choose a due date and time.");
@@ -140,8 +143,9 @@ export function CallTaskDialog({ call, open, onClose, onSaved }: { call: CallRec
     } catch (err) { setError(err instanceof Error ? err.message : "Could not create the follow-up task."); }
     finally { setSaving(false); }
   }
-  return <LocalDialog open={open} onClose={onClose} title="Create follow-up task" subtitle={call ? `From your call with ${call.lead?.name ?? "this lead"}` : undefined} footer={<><button type="button" className={secondary} onClick={onClose}>Cancel</button><button type="submit" form="call-task-form" disabled={saving} className={primary}>{saving ? "Saving…" : "Create task"}</button></>}>
+  return <LocalDialog open={open} onClose={onClose} title="Create follow-up task" subtitle={call ? `From your call with ${call.lead?.name ?? "this lead"}` : undefined} footer={<><button type="button" className={secondary} onClick={onClose}>Cancel</button><button type="submit" form="call-task-form" disabled={saving || previewMode} className={primary}>{previewMode ? "Preview only" : saving ? "Saving…" : "Create task"}</button></>}>
     {call && <form id="call-task-form" onSubmit={submit} className="flex flex-col gap-4">
+      {previewMode && <p className="m-0 rounded-md bg-[#fff8e6] px-3 py-2 text-[12px] text-[#704d00]">Preview mode — this task will not be saved.</p>}
       <div className="rounded-md bg-[#f0efff] px-3 py-2.5 text-[12px] leading-[18px] text-[#5048e5]">Linked to <strong>{call.lead?.name ?? "lead"}</strong>{call.lead?.name && call.lead?.phone ? ` · ${call.lead.phone}` : ""} and to the call on {formatCallDate(call.calledAt)}. This task will stay linked to the call and lead.</div>
       <label className={field}>Title <span className="text-[#b42318]">*</span><input required autoFocus value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} className={control} /></label>
       <fieldset className="m-0 flex flex-col gap-2 border-0 p-0"><legend className={field}>Type</legend><div className="grid grid-cols-3 gap-1 rounded-md bg-[#f4f4f5] p-1">{(["Call", "Email", "Note"] as const).map((value) => <button type="button" key={value} aria-pressed={type === value} onClick={() => setType(value)} className={`h-8 rounded text-[12px] ${type === value ? "bg-white font-medium text-[#18181c] shadow-sm" : "text-[#52525c]"}`}>{value}</button>)}</div></fieldset>

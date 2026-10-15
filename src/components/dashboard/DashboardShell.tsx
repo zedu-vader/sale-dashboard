@@ -33,6 +33,8 @@ type Props = {
   unread: boolean;
   /** Active nav item. Defaults to "Dashboard". */
   active?: string;
+  /** Renders the Calls UI review shell without presenting a signed-in account. */
+  previewMode?: boolean;
   children: ReactNode;
 };
 
@@ -44,7 +46,7 @@ const initialsOf = (name: string) =>
     .map((p) => p[0]!.toUpperCase())
     .join("") || "?";
 
-// Leads, Calls and Contacts pages aren't built yet, so those items don't navigate.
+// Leads and Contacts pages aren't built yet, so those items don't navigate.
 const NAV = [
   { label: "Dashboard", href: "/", icon: <LayoutDashboard aria-hidden /> },
   { label: "Leads", href: "#", icon: <UserRound aria-hidden /> },
@@ -65,7 +67,7 @@ function useWideScreen() {
   return wide;
 }
 
-export function DashboardShell({ user, openTaskCount, unread, active = "Dashboard", children }: Props) {
+export function DashboardShell({ user, openTaskCount, unread, active = "Dashboard", previewMode = false, children }: Props) {
   const router = useRouter();
   const wide = useWideScreen();
   // null = follow the viewport; the top-bar toggle pins it until the viewport class changes.
@@ -103,15 +105,21 @@ export function DashboardShell({ user, openTaskCount, unread, active = "Dashboar
         <>
           <NavItem label="Help center" href="#" icon={<CircleHelp aria-hidden />} />
           <SidebarDivider />
-          <Dropdown
-            side="top"
-            className={rail ? undefined : "w-full"}
-            trigger={(p) => (
-              <UserTrigger name={user.name} email={user.email} initials={initials} image={user.image} collapsed={rail} {...p} />
-            )}
-          >
-            <UserMenu name={user.name} subtitle={user.email ?? undefined} onLogOut={() => signOut()} />
-          </Dropdown>
+          {previewMode ? (
+            <div className={`rounded-md border border-[#f3d38a] bg-[#fff8e6] px-3 py-2 text-[11px] leading-4 text-[#704d00] ${rail ? "text-center" : ""}`}>
+              {rail ? "PREVIEW" : <>Local preview<br /><span className="font-normal">Sample data only</span></>}
+            </div>
+          ) : (
+            <Dropdown
+              side="top"
+              className={rail ? undefined : "w-full"}
+              trigger={(p) => (
+                <UserTrigger name={user.name} email={user.email} initials={initials} image={user.image} collapsed={rail} {...p} />
+              )}
+            >
+              <UserMenu name={user.name} subtitle={user.email ?? undefined} onLogOut={() => signOut()} />
+            </Dropdown>
+          )}
         </>
       }
     >
@@ -120,7 +128,7 @@ export function DashboardShell({ user, openTaskCount, unread, active = "Dashboar
           <NavItem
             key={n.label}
             label={n.label}
-            href={n.href}
+            href={previewMode && n.label === "Calls" ? "/calls/preview" : n.href}
             icon={n.icon}
             active={n.label === active}
             count={n.tasks && openTaskCount > 0 ? openTaskCount : undefined}
@@ -140,7 +148,7 @@ export function DashboardShell({ user, openTaskCount, unread, active = "Dashboar
           unread={unread}
           onToggleSidebar={() => setPinned(!collapsed)}
           onOpenMenu={() => setDrawer(true)}
-          newMenu={<NewMenu onLogCall={() => router.push("/calls?log=1")} onImport={() => {}} />}
+          newMenu={<NewMenu onLogCall={() => router.push(previewMode ? "/calls/preview?log=1" : "/calls?log=1")} onImport={() => {}} />}
         />
         <main className="min-h-0 flex-1 overflow-y-auto">{children}</main>
       </div>
