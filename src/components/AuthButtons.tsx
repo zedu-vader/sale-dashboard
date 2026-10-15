@@ -1,11 +1,12 @@
 "use client";
 
-import { signIn, signOut } from "next-auth/react";
+import { signIn } from "next-auth/react";
+import { button } from "@/components/ui/button";
 
 export function SignInButton() {
-  return <button onClick={() => signIn("google")}>Sign in with Google</button>;
-}
-
-export function SignOutButton() {
-  return <button onClick={() => signOut()}>Sign out</button>;
+  return (
+    <button className={button({ size: "lg" })} onClick={() => signIn("google")}>
+      Sign in with Google
+    </button>
+  );
 }
