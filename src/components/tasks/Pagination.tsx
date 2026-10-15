@@ -10,15 +10,15 @@ interface Props {
 
 // hover:/disabled:hover: are explicit because the app-wide `button:hover` rule would otherwise win.
 const btn =
-  "grid h-8 w-8 cursor-pointer place-items-center rounded-lg border border-solid p-0 disabled:cursor-default disabled:opacity-40 disabled:hover:bg-white";
-const idle = "border-line bg-white text-ink hover:bg-canvas";
+  "grid h-8 w-8 cursor-pointer place-items-center rounded-lg border border-solid p-0 disabled:cursor-default disabled:opacity-40 disabled:hover:bg-surface";
+const idle = "border-line bg-surface text-ink hover:bg-surface-sunken";
 
 export function Pagination({ page, pages, total, pageSize, onPage }: Props) {
   const from = total ? (page - 1) * pageSize + 1 : 0;
   const to = Math.min(page * pageSize, total);
   return (
     <div className="mt-2.5 flex flex-col items-center gap-2.5 pt-2.5 @3xl:flex-row @3xl:justify-between">
-      <small className="text-xs text-muted">
+      <small className="text-xs text-ink-muted">
         Showing {from}–{to} of {total} tasks
       </small>
       <div className="flex gap-1.5">
@@ -29,7 +29,7 @@ export function Pagination({ page, pages, total, pageSize, onPage }: Props) {
           <button
             key={n}
             onClick={() => onPage(n)}
-            className={`${btn} text-sm ${n === page ? "border-brand bg-brand text-white hover:bg-brand-hover" : idle}`}
+            className={`${btn} text-sm ${n === page ? "border-brand bg-brand text-white hover:bg-brand-bright" : idle}`}
           >
             {n}
           </button>

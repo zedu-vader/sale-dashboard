@@ -21,8 +21,8 @@ const TABS: { key: "all" | TaskBucket; label: string }[] = [
 
 const btn =
   "inline-flex h-[42px] flex-none cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-[10px] border border-solid px-5 text-sm font-semibold no-underline";
-const btnPrimary = `${btn} border-brand bg-brand text-white hover:bg-brand-hover`;
-const btnGhost = `${btn} border-line bg-white text-brand hover:bg-canvas`;
+const btnPrimary = `${btn} border-brand bg-brand text-white hover:bg-brand-bright`;
+const btnGhost = `${btn} border-line bg-surface text-brand hover:bg-surface-sunken`;
 
 /** Self-contained Tasks screen. Renders inside whatever shell wraps it; layout follows its container width. */
 export function TasksPage() {
@@ -83,12 +83,12 @@ export function TasksPage() {
   }, []);
 
   return (
-    <div className="@container min-h-full bg-canvas text-sm text-ink [&_button]:font-[inherit]">
+    <div className="@container text-sm text-ink [&_button]:font-[inherit]">
       <div className="mx-auto flex max-w-[1120px] flex-col gap-3.5 px-4 pb-8 pt-[18px] @3xl:gap-[18px] @3xl:px-8 @3xl:pb-10 @3xl:pt-7">
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="m-0 text-[26px] font-extrabold tracking-tight text-ink @3xl:text-3xl">Tasks</h1>
-            <p className="m-0 mt-1 leading-snug text-muted">Stay on top of your follow-ups and never miss an important lead.</p>
+            <p className="m-0 mt-1 leading-snug text-ink-muted">Stay on top of your follow-ups and never miss an important lead.</p>
           </div>
           <button onClick={() => setAdding(true)} className={`${btnPrimary} h-[38px]! px-3.5! @3xl:h-[42px]! @3xl:px-5!`}>
             <Plus size={16} /> Add Task
@@ -107,8 +107,8 @@ export function TasksPage() {
               }}
               className={`inline-flex h-[34px] cursor-pointer items-center whitespace-nowrap rounded-lg border border-solid px-4 py-0 text-sm ${
                 tab === t.key
-                  ? "border-brand bg-brand font-semibold text-white hover:bg-brand-hover"
-                  : "border-line bg-white font-medium text-ink hover:bg-canvas"
+                  ? "border-brand bg-brand font-semibold text-white hover:bg-brand-bright"
+                  : "border-line bg-surface font-medium text-ink hover:bg-surface-sunken"
               }`}
             >
               {t.label}
@@ -118,7 +118,7 @@ export function TasksPage() {
 
         <StatCards counts={counts} />
 
-        <section className="rounded-2xl border border-solid border-line bg-white p-3 @3xl:p-4">
+        <section className="rounded-2xl border border-solid border-line bg-surface p-3 @3xl:p-4">
           <TaskFilters
             filters={filters}
             owners={Object.keys(OWNERS)}
@@ -133,10 +133,10 @@ export function TasksPage() {
             {rows.map((t) => (
               <TaskRow key={t.id} task={t} view={views.get(t.id)!} onToggle={() => toggle(t)} />
             ))}
-            {tasks === null && !loadError && <p className="m-0 py-10 text-center text-muted">Loading tasks…</p>}
-            {loadError && <p role="alert" className="m-0 py-10 text-center text-red-600">Couldn’t load tasks: {loadError}</p>}
+            {tasks === null && !loadError && <p className="m-0 py-10 text-center text-ink-muted">Loading tasks…</p>}
+            {loadError && <p role="alert" className="m-0 py-10 text-center text-danger">Couldn’t load tasks: {loadError}</p>}
             {tasks && rows.length === 0 && (
-              <p className="m-0 py-10 text-center text-muted">{tasks.length ? "No tasks match your filters." : "No tasks yet. Add your first one."}</p>
+              <p className="m-0 py-10 text-center text-ink-muted">{tasks.length ? "No tasks match your filters." : "No tasks yet. Add your first one."}</p>
             )}
           </div>
           <Pagination page={current} pages={pages} total={filtered.length} pageSize={PAGE_SIZE} onPage={setPage} />

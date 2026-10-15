@@ -8,7 +8,7 @@ export interface Filters {
 }
 
 const field =
-  "relative flex h-10 items-center rounded-[10px] border border-solid border-line bg-white text-muted focus-within:border-brand";
+  "relative flex h-10 items-center rounded-[10px] border border-solid border-line bg-surface text-ink-muted focus-within:border-brand";
 
 function Select({ value, onChange, options, label }: { value: string; onChange: (v: string) => void; options: string[]; label: string }) {
   return (
@@ -53,7 +53,7 @@ export function TaskFilters({ filters, owners, types, onChange }: FilterProps) {
       <Select label="All Task Type" value={filters.type} onChange={(type) => onChange({ type })} options={[...types]} />
       <button
         aria-label="More filters"
-        className="grid h-10 w-10 cursor-pointer place-items-center rounded-[10px] border border-solid border-line bg-white p-0 text-muted hover:bg-canvas"
+        className="grid h-10 w-10 cursor-pointer place-items-center rounded-[10px] border border-solid border-line bg-surface p-0 text-ink-muted hover:bg-surface-sunken"
       >
         <SlidersHorizontal size={16} />
       </button>

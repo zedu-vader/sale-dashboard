@@ -3,14 +3,14 @@ import { OWNERS, type OwnerTone, type Task, type TaskStatus, type TaskType, type
 
 const TYPE_ICON: Record<TaskType, LucideIcon> = { Call: Phone, Email: Mail, Note: StickyNote };
 const TYPE_STYLE: Record<TaskType, string> = {
-  Call: "bg-brand-soft text-brand",
-  Email: "bg-[#e0ecff] text-blue-700",
-  Note: "bg-[#dcf5e6] text-green-700",
+  Call: "bg-brand-soft text-brand-bright",
+  Email: "bg-info/15 text-info",
+  Note: "bg-success/15 text-success",
 };
 const STATUS_STYLE: Record<TaskStatus, string> = {
-  Pending: "bg-[#fdf0c9] text-yellow-700",
-  Done: "bg-[#dcf5e6] text-green-700",
-  Overdue: "bg-red-100 text-red-700",
+  Pending: "bg-warning/15 text-warning",
+  Done: "bg-success/15 text-success",
+  Overdue: "bg-danger/15 text-danger",
 };
 const TONE_STYLE: Record<OwnerTone, string> = {
   purple: "bg-[#5b21b6] text-white",
@@ -44,7 +44,7 @@ const checkbox = "m-0 h-4 w-4 cursor-pointer accent-brand";
 
 export function TaskTableHead() {
   return (
-    <div className={`${ROW_GRID} hidden py-2.5 text-xs font-semibold text-muted @3xl:grid`}>
+    <div className={`${ROW_GRID} hidden py-2.5 text-xs font-semibold text-ink-muted @3xl:grid`}>
       <span><input type="checkbox" aria-label="Select all" className={checkbox} /></span>
       <span>Task</span>
       <span>Related Lead</span>
@@ -69,11 +69,11 @@ export function TaskRow({ task: t, view, onToggle }: { task: Task; view: TaskVie
       </span>
 
       <span className={`${AREA.task} flex min-w-0 flex-col gap-0.5`}>
-        <strong className={`text-[13px] font-semibold ${t.done ? "text-muted line-through" : ""}`}>{t.title}</strong>
-        {t.notes && <small className="truncate text-xs text-muted">{t.notes}</small>}
+        <strong className={`text-[13px] font-semibold ${t.done ? "text-ink-muted line-through" : ""}`}>{t.title}</strong>
+        {t.notes && <small className="truncate text-xs text-ink-muted">{t.notes}</small>}
       </span>
 
-      <span className={`${AREA.lead} self-center text-xs text-muted @3xl:text-sm @3xl:text-[#3b3753]`}>{t.lead || "—"}</span>
+      <span className={`${AREA.lead} self-center text-xs text-ink-muted @3xl:text-sm @3xl:text-ink`}>{t.lead || "—"}</span>
 
       <span className={AREA.type}>
         <em className={`${chip} ${TYPE_STYLE[t.type]}`}>
@@ -82,8 +82,8 @@ export function TaskRow({ task: t, view, onToggle }: { task: Task; view: TaskVie
       </span>
 
       <span className={`${AREA.due} flex flex-col gap-0.5 text-right @3xl:text-left`}>
-        <strong className={`text-[13px] font-semibold ${view.hot ? "text-red-600" : ""}`}>{view.dueLabel}</strong>
-        <small className="text-xs text-muted">{view.dueSub}</small>
+        <strong className={`text-[13px] font-semibold ${view.hot ? "text-danger" : ""}`}>{view.dueLabel}</strong>
+        <small className="text-xs text-ink-muted">{view.dueSub}</small>
       </span>
 
       <span className={`${AREA.status} justify-self-end @3xl:justify-self-auto`}>
@@ -99,7 +99,7 @@ export function TaskRow({ task: t, view, onToggle }: { task: Task; view: TaskVie
 
       <button
         aria-label="Task actions"
-        className={`${AREA.more} grid h-7 w-7 cursor-pointer place-items-center rounded-lg bg-transparent p-0 text-ink hover:bg-canvas @3xl:h-8 @3xl:w-8`}
+        className={`${AREA.more} grid h-7 w-7 cursor-pointer place-items-center rounded-lg bg-transparent p-0 text-ink hover:bg-surface-sunken @3xl:h-8 @3xl:w-8`}
       >
         <MoreVertical size={16} />
       </button>

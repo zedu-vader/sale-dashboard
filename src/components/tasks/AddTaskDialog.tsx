@@ -20,7 +20,7 @@ function defaultDue() {
 
 const label = "flex flex-col gap-1.5 text-xs font-semibold text-ink";
 const input =
-  "h-10 w-full rounded-[10px] border border-solid border-line bg-white px-3 font-[inherit] text-sm font-normal text-ink outline-none focus:border-brand";
+  "h-10 w-full rounded-[10px] border border-solid border-line bg-surface px-3 font-[inherit] text-sm font-normal text-ink outline-none focus:border-brand";
 
 export function AddTaskDialog({ open, onClose, onSubmit }: Props) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -72,15 +72,15 @@ export function AddTaskDialog({ open, onClose, onSubmit }: Props) {
       ref={ref}
       onClose={onClose}
       onClick={(e) => e.target === ref.current && onClose()}
-      className="m-auto w-[calc(100%-32px)] max-w-md rounded-2xl border-0 bg-white p-0 text-ink shadow-2xl backdrop:bg-ink/40"
+      className="m-auto w-[calc(100%-32px)] max-w-md rounded-2xl border-0 bg-surface p-0 text-ink shadow-modal backdrop:bg-ink/40"
     >
       <form onSubmit={submit} className="flex flex-col gap-4 p-5 sm:p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 className="m-0 text-xl font-extrabold">Add Task</h2>
-            <p className="m-0 mt-0.5 text-sm text-muted">Schedule a follow-up for a lead.</p>
+            <p className="m-0 mt-0.5 text-sm text-ink-muted">Schedule a follow-up for a lead.</p>
           </div>
-          <button type="button" onClick={onClose} aria-label="Close" className="grid h-8 w-8 flex-none cursor-pointer place-items-center rounded-lg bg-transparent p-0 text-muted hover:bg-canvas">
+          <button type="button" onClick={onClose} aria-label="Close" className="grid h-8 w-8 flex-none cursor-pointer place-items-center rounded-lg bg-transparent p-0 text-ink-muted hover:bg-surface-sunken">
             <X size={18} />
           </button>
         </div>
@@ -91,12 +91,12 @@ export function AddTaskDialog({ open, onClose, onSubmit }: Props) {
         </label>
 
         <label className={label}>
-          <span>Notes <span className="font-normal text-muted">(optional)</span></span>
+          <span>Notes <span className="font-normal text-ink-muted">(optional)</span></span>
           <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="What should happen?" maxLength={500} className={input} />
         </label>
 
         <label className={label}>
-          <span>Related lead <span className="font-normal text-muted">(optional)</span></span>
+          <span>Related lead <span className="font-normal text-ink-muted">(optional)</span></span>
           <input value={lead} onChange={(e) => setLead(e.target.value)} placeholder="Lead or company name" maxLength={200} className={input} />
         </label>
 
@@ -125,16 +125,16 @@ export function AddTaskDialog({ open, onClose, onSubmit }: Props) {
         </label>
 
         {error && (
-          <p role="alert" className="m-0 text-sm font-medium text-red-600">
+          <p role="alert" className="m-0 text-sm font-medium text-danger">
             {error}
           </p>
         )}
 
         <div className="flex justify-end gap-3 pt-1">
-          <button type="button" onClick={onClose} className="inline-flex h-10 cursor-pointer items-center py-0 rounded-[10px] border border-solid border-line bg-white px-5 text-sm font-semibold text-brand hover:bg-canvas">
+          <button type="button" onClick={onClose} className="inline-flex h-10 cursor-pointer items-center py-0 rounded-[10px] border border-solid border-line bg-surface px-5 text-sm font-semibold text-brand hover:bg-surface-sunken">
             Cancel
           </button>
-          <button type="submit" disabled={saving} className="inline-flex h-10 cursor-pointer items-center py-0 rounded-[10px] border border-solid border-brand bg-brand px-5 text-sm font-semibold text-white hover:bg-brand-hover disabled:opacity-60">
+          <button type="submit" disabled={saving} className="inline-flex h-10 cursor-pointer items-center py-0 rounded-[10px] border border-solid border-brand bg-brand px-5 text-sm font-semibold text-white hover:bg-brand-bright disabled:opacity-60">
             {saving ? "Saving…" : "Add Task"}
           </button>
         </div>
