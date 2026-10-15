@@ -21,6 +21,8 @@ export type InviteDTO = {
   role: "ADMIN" | "MEMBER";
   status: InviteStatus;
   token: string | null;
+  uses: number;
+  maxUses: number;
   expiresAt: string;
   createdAt: string;
   invitedBy: string | null;
@@ -36,6 +38,8 @@ export function toInviteDTO(i: Invite & { invitedBy?: { name: string | null; ema
     role: i.role,
     status,
     token: status === "PENDING" ? i.token : null,
+    uses: i.uses,
+    maxUses: i.maxUses,
     expiresAt: i.expiresAt.toISOString(),
     createdAt: i.createdAt.toISOString(),
     invitedBy: i.invitedBy ? (i.invitedBy.name ?? i.invitedBy.email) : null,

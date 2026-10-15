@@ -37,11 +37,15 @@ export async function POST(req: Request) {
   const passwordHash = await hashPassword(body?.password as string);
 
   const user = await prisma.$transaction(async (tx) => {
-    // Claim the invite first so two concurrent submissions can't both create an account.
-    const claimed = await tx.invite.updateMany({ where: { id: invite.id, usedAt: null, revokedAt: null }, data: { usedAt: new Date() } });
-    if (claimed.count !== 1) return null;
-    const created = await tx.user.create({ data: { name, email, passwordHash, role: invite.role } });
-    await tx.invite.update({ where: { id: invite.id }, data: { acceptedById: created.id } });
+    // Claim one use atomically so concurrent submissions can't exceed maxUses. usedAt is set on the last use.
+    const claimed = await tx.$executeRaw`
+      UPDATE "Invite"
+      SET "uses" = "uses" + 1,
+          "usedAt" = CASE WHEN "uses" + 1 >= "maxUses" THEN now() ELSE "usedAt" END
+      WHERE "id" = ${invite.id} AND "revokedAt" IS NULL AND "usedAt" IS NULL
+        AND "expiresAt" > now() AND "uses" < "maxUses"`;
+    if (claimed !== 1) return null;
+    const created = await tx.user.create({ data: { name, email, passwordHash, role: invite.role, inviteId: invite.id } });
     await tx.accessRequest.updateMany({ where: { email, status: { not: "DISMISSED" } }, data: { status: "INVITED", handledAt: new Date() } });
     return created;
   });

@@ -35,7 +35,7 @@ export function InviteTable({ invites, busyId, onResend, onRevoke, onCopy }: Pro
           const open = i.status === "PENDING";
           return (
             <TableRow key={i.id}>
-              <TableCell type="primary">{i.email ?? <span className="text-z-fg-muted">No email (manual)</span>}</TableCell>
+              <TableCell type="primary">{i.email ?? <span className="text-z-fg-muted">Shared code · {i.uses}/{i.maxUses} used</span>}</TableCell>
               <TableCell>{i.role === "ADMIN" ? "Admin" : "Member"}</TableCell>
               <TableCell>
                 <InviteStatusPill status={i.status} />

@@ -24,7 +24,8 @@ model User {
   disabledAt    DateTime?
   refreshTokens RefreshToken[]
   invitesSent   Invite[]       @relation("InvitedBy")
-  invitedVia    Invite?        @relation("AcceptedBy")
+  inviteId      String?
+  invite        Invite?        @relation("AcceptedVia", fields: [inviteId], references: [id], onDelete: SetNull)
 }
 
 enum Role {
@@ -32,7 +33,7 @@ enum Role {
   MEMBER
 }
 
-// One-time 9-character setup token. Rows can be inserted by hand, so id and expiresAt have DB-level defaults.
+// 9-character setup token, valid for `maxUses` sign-ups (1 for emailed invites). Rows can be inserted by hand, so id and expiresAt have DB-level defaults.
 model Invite {
   id           String    @id @default(dbgenerated("gen_random_uuid()::text"))
   token        String    @unique
@@ -44,8 +45,9 @@ model Invite {
   createdAt    DateTime  @default(now())
   invitedById  String?
   invitedBy    User?     @relation("InvitedBy", fields: [invitedById], references: [id], onDelete: SetNull)
-  acceptedById String?   @unique
-  acceptedBy   User?     @relation("AcceptedBy", fields: [acceptedById], references: [id], onDelete: SetNull)
+  maxUses      Int       @default(1)
+  uses         Int       @default(0)
+  members      User[]    @relation("AcceptedVia")
 
   @@index([email])
   @@index([createdAt])
