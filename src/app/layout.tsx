@@ -8,23 +8,15 @@ export const metadata: Metadata = {
   description: "Sale Dashboard by Zeduchat",
 };
 
+// ZEDU v2 is light mode only for now (its Dark mode mirrors Light until it is designed).
 export const viewport: Viewport = {
   viewportFit: "cover",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f4f3fb" },
-    { media: "(prefers-color-scheme: dark)", color: "#0d0b1f" },
-  ],
+  themeColor: "#ffffff",
 };
-
-// Applies the saved theme (or the system preference) before first paint, so there's no flash.
-const themeScript = `try{var t=localStorage.getItem("zedu-theme");if(t!=="light"&&t!=="dark")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";document.documentElement.dataset.theme=t}catch(e){}`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`} suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-      </head>
+    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
       <body>{children}</body>
     </html>
   );
