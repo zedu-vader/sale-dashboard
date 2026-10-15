@@ -85,6 +85,12 @@
   --z-pill-lost-bg: #fee4e2;
   --z-pill-lost-fg: #b42318;
 
+  /* task status pills (Tasks screens, Figma 3:3271) */
+  --z-task-pending-bg: #dbeafe;
+  --z-task-pending-fg: #1d4ed8;
+  --z-task-completed-bg: #d1fadf;
+  --z-task-completed-fg: #067647;
+
   /* shadow colours */
   --z-shadow-xs: rgba(16, 24, 40, 0.05);
   --z-shadow-sm: rgba(16, 24, 40, 0.06);
@@ -160,6 +166,11 @@
   --color-z-pill-won-fg: var(--z-pill-won-fg);
   --color-z-pill-lost: var(--z-pill-lost-bg);
   --color-z-pill-lost-fg: var(--z-pill-lost-fg);
+
+  --color-z-task-pending: var(--z-task-pending-bg);
+  --color-z-task-pending-fg: var(--z-task-pending-fg);
+  --color-z-task-completed: var(--z-task-completed-bg);
+  --color-z-task-completed-fg: var(--z-task-completed-fg);
 
   /* ZEDU/Shadow/*, ZEDU/Focus/* */
   --shadow-z-xs: 0 1px 2px 0 var(--z-shadow-xs);

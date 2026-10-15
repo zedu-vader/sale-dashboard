@@ -30,6 +30,8 @@ type Props = {
   openTaskCount: number;
   /** Shows the red dot on the notifications bell. */
   unread: boolean;
+  /** Active nav item. Defaults to "Dashboard". */
+  active?: string;
   children: ReactNode;
 };
 
@@ -41,12 +43,12 @@ const initialsOf = (name: string) =>
     .map((p) => p[0]!.toUpperCase())
     .join("") || "?";
 
-// Leads, Calls, Tasks and Contacts pages aren't built yet, so those items don't navigate.
+// Leads, Calls and Contacts pages aren't built yet, so those items don't navigate.
 const NAV = [
-  { label: "Dashboard", href: "/", icon: <LayoutDashboard aria-hidden />, active: true },
+  { label: "Dashboard", href: "/", icon: <LayoutDashboard aria-hidden /> },
   { label: "Leads", href: "#", icon: <UserRound aria-hidden /> },
   { label: "Calls", href: "#", icon: <Phone aria-hidden /> },
-  { label: "Tasks", href: "#", icon: <SquareCheck aria-hidden />, tasks: true },
+  { label: "Tasks", href: "/tasks", icon: <SquareCheck aria-hidden />, tasks: true },
   { label: "Contacts", href: "#", icon: <Contact aria-hidden /> },
 ];
 
@@ -62,7 +64,7 @@ function useWideScreen() {
   return wide;
 }
 
-export function DashboardShell({ user, openTaskCount, unread, children }: Props) {
+export function DashboardShell({ user, openTaskCount, unread, active = "Dashboard", children }: Props) {
   const wide = useWideScreen();
   // null = follow the viewport; the top-bar toggle pins it until the viewport class changes.
   const [pinned, setPinned] = useState<boolean | null>(null);
@@ -118,7 +120,7 @@ export function DashboardShell({ user, openTaskCount, unread, children }: Props)
             label={n.label}
             href={n.href}
             icon={n.icon}
-            active={n.active}
+            active={n.label === active}
             count={n.tasks && openTaskCount > 0 ? openTaskCount : undefined}
             onClick={onNavigate}
           />
