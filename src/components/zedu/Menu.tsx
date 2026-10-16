@@ -2,8 +2,8 @@
 
 // ZEDU/Menu item, ZEDU/Menu divider, ZEDU/Menu label, plus a dropdown wrapper (Figma 16811:18616–18619).
 
-import { useCallback, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
-import { useDismiss } from "@/components/ui/useDismiss";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { cx } from "./cx";
 
 /** Menu panel: white, radius 10, 4px inset, Shadow/MD. */
@@ -90,12 +90,63 @@ type DropdownProps = {
   className?: string;
 };
 
-/** Click-to-open menu. Closes on outside click, Escape or selecting an item; arrow keys move between items. */
+/**
+ * Click-to-open menu. Closes on outside click, Escape or selecting an item; arrow keys move between items.
+ * The menu is portalled to document.body and fixed-positioned so it is never
+ * clipped by — nor scrolls — an overflow ancestor (e.g. the tasks filter bar).
+ */
 export function Dropdown({ trigger, children, align = "start", side = "bottom", className }: DropdownProps) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  const close = useCallback(() => setOpen(false), []);
-  useDismiss(ref, open, close);
+  const anchorRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const close = useCallback(() => {
+    setOpen(false);
+    setPos(null);
+  }, []);
+
+  const place = useCallback(() => {
+    const anchor = anchorRef.current;
+    const menu = menuRef.current;
+    if (!anchor || !menu) return;
+    const r = anchor.getBoundingClientRect();
+    const mw = menu.offsetWidth;
+    const mh = menu.offsetHeight;
+    const gap = 4;
+    let left = align === "end" ? r.right - mw : r.left;
+    left = Math.max(8, Math.min(left, window.innerWidth - mw - 8));
+    let top = side === "bottom" ? r.bottom + gap : r.top - mh - gap;
+    if (top + mh > window.innerHeight - 8) top = r.top - mh - gap;
+    top = Math.max(8, Math.min(top, window.innerHeight - mh - 8));
+    setPos({ top, left });
+  }, [align, side]);
+
+  useLayoutEffect(() => {
+    if (open) place();
+  }, [open, place]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointer = (e: PointerEvent) => {
+      const t = e.target as Node;
+      if (anchorRef.current?.contains(t) || menuRef.current?.contains(t)) return;
+      close();
+    };
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if (e.key === "Escape") close();
+    };
+    const onMove = () => place();
+    document.addEventListener("pointerdown", onPointer);
+    document.addEventListener("keydown", onKey);
+    window.addEventListener("scroll", onMove, true);
+    window.addEventListener("resize", onMove);
+    return () => {
+      document.removeEventListener("pointerdown", onPointer);
+      document.removeEventListener("keydown", onKey);
+      window.removeEventListener("scroll", onMove, true);
+      window.removeEventListener("resize", onMove);
+    };
+  }, [open, close, place]);
 
   const onClick = (e: MouseEvent) => {
     if ((e.target as HTMLElement).closest('[role="menuitem"]')) close();
@@ -103,7 +154,7 @@ export function Dropdown({ trigger, children, align = "start", side = "bottom", 
 
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
-    const items = Array.from(ref.current?.querySelectorAll<HTMLElement>('[role="menuitem"]:not(:disabled)') ?? []);
+    const items = Array.from(menuRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]:not(:disabled)') ?? []);
     if (!items.length) return;
     e.preventDefault();
     const i = items.indexOf(document.activeElement as HTMLElement);
@@ -112,20 +163,20 @@ export function Dropdown({ trigger, children, align = "start", side = "bottom", 
   };
 
   return (
-    <div ref={ref} className={cx("relative", className)} onKeyDown={onKeyDown}>
+    <div ref={anchorRef} className={cx("relative inline-block", className)}>
       {trigger({ "aria-haspopup": "menu", "aria-expanded": open, onClick: () => setOpen((o) => !o) })}
-      {open && (
-        <div
-          onClick={onClick}
-          className={cx(
-            "absolute z-50",
-            align === "end" ? "right-0" : "left-0",
-            side === "bottom" ? "top-full mt-1" : "bottom-full mb-1",
-          )}
-        >
-          {children}
-        </div>
-      )}
+      {open &&
+        createPortal(
+          <div
+            ref={menuRef}
+            onClick={onClick}
+            onKeyDown={onKeyDown}
+            style={{ position: "fixed", top: pos ? pos.top : -9999, left: pos ? pos.left : -9999, zIndex: 50 }}
+          >
+            {children}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { clearSessionCookies, rotateSession } from "@/lib/auth";
-import { fail, safeNext, sameOrigin } from "@/lib/auth/http";
+import { fail, redirectTo, safeNext, sameOrigin } from "@/lib/auth/http";
 
 export const dynamic = "force-dynamic";
 
@@ -11,9 +11,9 @@ export async function GET(req: Request) {
   const user = await rotateSession(req.headers.get("user-agent"));
   if (!user) {
     clearSessionCookies();
-    return NextResponse.redirect(new URL(`/login?next=${encodeURIComponent(next)}`, url));
+    return redirectTo(`/login?next=${encodeURIComponent(next)}`);
   }
-  return NextResponse.redirect(new URL(next, url));
+  return redirectTo(next);
 }
 
 /** API clients: call after a 401, then retry the original request once. */

@@ -4,21 +4,26 @@ import { useState } from "react";
 import { Check } from "lucide-react";
 import { Avatar, Dropdown, Menu, MenuDivider, MenuItem, MenuLabel, Search } from "@/components/zedu";
 import { cx } from "@/components/zedu/cx";
-import { ME, TASK_OWNERS, type TaskOwner } from "@/data/tasks";
+import type { TaskOwner } from "@/data/tasks";
 
 /** Owner filter popover (Figma 7:4119): search + owner options + "Clear owner filter". */
 export function OwnerFilter({
+  options,
+  meId,
   value,
   onChange,
   trigger,
 }: {
+  options: TaskOwner[];
+  /** Key of the signed-in user's option, labelled "Me · name". */
+  meId?: string;
   /** Null = everyone. */
   value: TaskOwner | null;
   onChange: (owner: TaskOwner | null) => void;
   trigger: (props: { onClick: () => void; open: boolean }) => React.ReactNode;
 }) {
   const [query, setQuery] = useState("");
-  const options = TASK_OWNERS.filter((o) => o.name.toLowerCase().includes(query.trim().toLowerCase()));
+  const list = options.filter((o) => o.name.toLowerCase().includes(query.trim().toLowerCase()));
 
   return (
     <Dropdown
@@ -36,7 +41,7 @@ export function OwnerFilter({
           />
         </div>
         <MenuLabel>Owner</MenuLabel>
-        {options.map((o) => {
+        {list.map((o) => {
           const selected = value?.key === o.key;
           return (
             <MenuItem
@@ -50,7 +55,7 @@ export function OwnerFilter({
                   <Avatar size={24} initials={o.initials} />
                 )
               }
-              onSelect={() => onChange(o.key === "me" ? ME : o)}
+              onSelect={() => onChange(o)}
             >
               <span className="flex min-w-0 flex-1 items-center gap-2">
                 <span
@@ -62,7 +67,7 @@ export function OwnerFilter({
                 >
                   {selected && <Check strokeWidth={2.5} />}
                 </span>
-                <span className="truncate">{o.key === "me" ? `Me · ${o.name}` : o.name}</span>
+                <span className="truncate">{o.key === meId ? `Me · ${o.name}` : o.name}</span>
               </span>
             </MenuItem>
           );

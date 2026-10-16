@@ -131,7 +131,7 @@ async function main() {
     data: { leadId: amaka.id, outcome: CallOutcome.CONNECTED, calledAt: at(2, 11, 20), durationSec: 180, notes: "Asked for the outlet list before quoting.", userId: agnes.id },
   });
   await prisma.task.create({
-    data: { title: "Confirm outlet list with Amaka", type: TaskType.CALL, dueAt: at(2, 16), done: true, completedAt: at(2, 16), leadId: amaka.id, userId: agnes.id, callId: earlyCall.id },
+    data: { title: "Confirm outlet list with Amaka", description: "Confirm the outlet list before quoting.", type: TaskType.CALL, dueAt: at(2, 16), done: true, completedAt: at(2, 16), ownerId: agnes.id, leadId: amaka.id, userId: agnes.id, callId: earlyCall.id },
   });
   const note = await prisma.note.create({
     data: { leadId: amaka.id, authorId: ibrahim.id, body: "Spoke to her assistant, Tolu. Best time to call is mornings before 11 AM.", createdAt: at(1, 16, 5) },
@@ -140,10 +140,10 @@ async function main() {
     data: { leadId: amaka.id, outcome: CallOutcome.CONNECTED, calledAt: at(0, 10, 12), durationSec: 240, notes: "Wants pricing for 3 outlets (Lekki, Yaba, Ikeja). Send proposal by Friday.", userId: agnes.id },
   });
   const task = await prisma.task.create({
-    data: { title: "Send proposal to Lagoon Foods", type: TaskType.FOLLOW_UP, dueAt: at(0, 15), leadId: amaka.id, userId: agnes.id, callId: call.id, createdAt: at(0, 10, 15) },
+    data: { title: "Send proposal to Lagoon Foods", description: "Confirm pricing for 3 outlets and send the proposal before Friday.", type: TaskType.FOLLOW_UP, dueAt: at(0, 15), ownerId: agnes.id, leadId: amaka.id, userId: agnes.id, callId: call.id, createdAt: at(0, 10, 15) },
   });
   await prisma.task.create({
-    data: { title: "Book onboarding call for 3 outlets", type: TaskType.MEETING, dueAt: at(-4, 10), leadId: amaka.id, userId: agnes.id },
+    data: { title: "Book onboarding call for 3 outlets", description: "Book the onboarding call once the proposal is accepted.", type: TaskType.MEETING, dueAt: at(-4, 10), ownerId: agnes.id, leadId: amaka.id, userId: agnes.id },
   });
   await prisma.activity.createMany({
     data: [
@@ -165,7 +165,7 @@ async function main() {
   ];
   for (const [name, title, type, dueAt] of nextActions) {
     const lead = await prisma.lead.findFirstOrThrow({ where: { name } });
-    await prisma.task.create({ data: { title, type, dueAt, leadId: lead.id, userId: lead.ownerId } });
+    await prisma.task.create({ data: { title, type, dueAt, ownerId: lead.ownerId, leadId: lead.id, userId: lead.ownerId } });
   }
 
   // Calls: the mock's last 7 days, plus quieter background days for earlier in the month/previous period.
@@ -211,8 +211,8 @@ async function main() {
   // Dashboard tasks that aren't tied to a lead.
   await prisma.task.createMany({
     data: [
-      { title: "Send proposal to Okeke Global", subtitle: "Pricing for 20 seats", type: TaskType.FOLLOW_UP, dueAt: at(1, 15, 0) },
-      { title: "Update lead notes", subtitle: "Log call outcomes", type: TaskType.OTHER, dueAt: at(-1, 16, 0) },
+      { title: "Send proposal to Okeke Global", subtitle: "Pricing for 20 seats", description: "Pricing for 20 seats.", type: TaskType.FOLLOW_UP, dueAt: at(1, 15, 0) },
+      { title: "Update lead notes", subtitle: "Log call outcomes", description: "Log call outcomes.", type: TaskType.OTHER, dueAt: at(-1, 16, 0) },
     ],
   });
 
