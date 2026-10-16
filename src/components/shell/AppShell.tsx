@@ -4,7 +4,7 @@
 // Sidebar: Expanded 248px at ≥1280px, Collapsed 64px rail at 768–1279px (the top-bar toggle overrides
 // either), and a drawer below 768px.
 
-import { CircleHelp, Contact, LayoutDashboard, Phone, Search as SearchIcon, SquareCheck, UserRound, X } from "lucide-react";
+import { CircleHelp, Contact, LayoutDashboard, Phone, Search as SearchIcon, Settings, SquareCheck, UserRound, X } from "lucide-react";
 import { signOut } from "@/lib/auth/client";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
@@ -24,7 +24,7 @@ import {
   WorkspaceSwitcher,
 } from "@/components/zedu";
 
-type User = { name: string; email?: string | null; image?: string | null };
+type User = { name: string; email?: string | null; image?: string | null; role?: "ADMIN" | "MEMBER" };
 
 type Props = {
   user: User;
@@ -99,7 +99,14 @@ export function AppShell({ user, openTaskCount, unread, active, children }: Prop
       }
       footer={
         <>
-          <NavItem label="Help center" href="#" icon={<CircleHelp aria-hidden />} />
+          <NavItem
+            label="Settings"
+            href="/settings"
+            icon={<Settings aria-hidden />}
+            active={active === "Settings" || pathname === "/settings" || pathname.startsWith("/settings/")}
+            onClick={onNavigate}
+          />
+          <NavItem label="Help center" href="https://github.com/zeduchat/sale-dashboard" icon={<CircleHelp aria-hidden />} />
           <SidebarDivider />
           <Dropdown
             side="top"
@@ -108,7 +115,28 @@ export function AppShell({ user, openTaskCount, unread, active, children }: Prop
               <UserTrigger name={user.name} email={user.email} initials={initials} image={user.image} collapsed={rail} {...p} />
             )}
           >
-            <UserMenu name={user.name} subtitle={user.email ?? undefined} onLogOut={() => signOut()} />
+            <UserMenu
+              name={user.name}
+              subtitle={user.email ? `${user.email}${user.role ? ` · ${user.role === "ADMIN" ? "Admin" : "Member"}` : ""}` : undefined}
+              onProfile={() => {
+                onNavigate?.();
+                router.push("/settings?tab=profile");
+              }}
+              onSettings={() => {
+                onNavigate?.();
+                router.push("/settings");
+              }}
+              onTeam={
+                user.role === "ADMIN"
+                  ? () => {
+                      onNavigate?.();
+                      router.push("/settings?tab=team");
+                    }
+                  : undefined
+              }
+              onHelp={() => window.open("https://github.com/zeduchat/sale-dashboard", "_blank")}
+              onLogOut={() => signOut()}
+            />
           </Dropdown>
         </>
       }

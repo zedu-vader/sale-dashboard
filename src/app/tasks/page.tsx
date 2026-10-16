@@ -18,7 +18,7 @@ export default async function TasksPage() {
 
   return (
     <AppShell
-      user={{ name, email: session.user.email, image: session.user.image }}
+      user={{ name, email: session.user.email, image: session.user.image, role: session.user.role }}
       openTaskCount={open}
       unread={overdue}
       active="Tasks"
