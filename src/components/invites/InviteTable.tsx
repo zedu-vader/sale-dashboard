@@ -1,6 +1,6 @@
 "use client";
 
-import { RotateCw, Trash2 } from "lucide-react";
+import { Copy, Link2, RotateCw, Trash2 } from "lucide-react";
 import { IconButton, Table, TableCell, TableHead, TableRow } from "@/components/zedu";
 import type { InviteDTO } from "@/lib/invites";
 import { InviteStatusPill } from "./InviteStatusPill";
@@ -11,10 +11,11 @@ type Props = {
   invites: InviteDTO[];
   busyId: string | null;
   onResend: (invite: InviteDTO) => void;
+  onCopy: (invite: InviteDTO, what: "code" | "link") => void;
   onRevoke: (invite: InviteDTO) => void;
 };
 
-export function InviteTable({ invites, busyId, onResend, onRevoke }: Props) {
+export function InviteTable({ invites, busyId, onResend, onCopy, onRevoke }: Props) {
   return (
     <Table>
       <thead>
@@ -44,6 +45,16 @@ export function InviteTable({ invites, busyId, onResend, onRevoke }: Props) {
               <TableCell type="actions">
                 {open && (
                   <span className="inline-flex gap-1">
+                    {i.token && (
+                      <>
+                        <IconButton label="Copy invite link" onClick={() => onCopy(i, "link")}>
+                          <Link2 aria-hidden />
+                        </IconButton>
+                        <IconButton label="Copy setup code" onClick={() => onCopy(i, "code")}>
+                          <Copy aria-hidden />
+                        </IconButton>
+                      </>
+                    )}
                     {i.email && (
                       <IconButton label="Resend email" disabled={busyId === i.id} onClick={() => onResend(i)}>
                         <RotateCw aria-hidden />
