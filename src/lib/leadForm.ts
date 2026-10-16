@@ -32,11 +32,24 @@ export const FIELD_LABELS: Record<LeadFormField, string> = {
 /** Digits only, for comparing phone numbers whatever their formatting. */
 export const phoneDigits = (phone: string) => phone.replace(/\D/g, "");
 
+/**
+ * Phone digits in +234 form, stored on contacts for search and duplicate checks: a local 11-digit number
+ * starting with 0 is rewritten, so 0803 123 4567 and +234 803 123 4567 give the same key.
+ * Keep in step with the SQL in prisma/migrations/0004_contacts.
+ */
+export function phoneKey(phone: string) {
+  const d = phoneDigits(phone);
+  return d.length === 11 && d.startsWith("0") ? `234${d.slice(1)}` : d;
+}
+
+/** The digits to look for inside a phoneKey when searching ("0803 123" → "803123"). */
+export const phoneSearchDigits = (q: string) => phoneDigits(q).replace(/^0/, "");
+
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-export function validateLead(v: LeadFormValues): LeadFormErrors {
+export function validateLead(v: Pick<LeadFormValues, "name" | "phone" | "email" | "company" | "followUp">, noun = "lead"): LeadFormErrors {
   const errors: LeadFormErrors = {};
-  if (!v.name.trim()) errors.name = "Enter the lead's name.";
+  if (!v.name.trim()) errors.name = `Enter the ${noun}'s name.`;
   else if (v.name.trim().length > 120) errors.name = "Keep the name under 120 characters.";
 
   const digits = phoneDigits(v.phone);

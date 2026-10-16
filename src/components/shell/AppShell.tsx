@@ -37,13 +37,13 @@ type Props = {
   children: ReactNode;
 };
 
-// Calls and Contacts pages aren't built yet, so those items don't navigate.
+// The Calls page isn't built yet, so that item doesn't navigate.
 const NAV = [
   { label: "Dashboard", href: "/", icon: <LayoutDashboard aria-hidden /> },
   { label: "Leads", href: "/leads", icon: <UserRound aria-hidden /> },
   { label: "Calls", href: "#", icon: <Phone aria-hidden /> },
   { label: "Tasks", href: "/tasks", icon: <SquareCheck aria-hidden />, tasks: true },
-  { label: "Contacts", href: "#", icon: <Contact aria-hidden /> },
+  { label: "Contacts", href: "/contacts", icon: <Contact aria-hidden /> },
 ];
 
 function useWideScreen() {

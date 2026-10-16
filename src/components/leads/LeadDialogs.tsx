@@ -4,7 +4,8 @@
 // The last two aren't in the Figma frames, so they reuse the Add lead modal's patterns.
 
 import { useEffect, useState, useTransition } from "react";
-import { createTask, logCall, updateLead } from "@/app/leads/actions";
+import type { LeadStatus } from "@prisma/client";
+import { updateLead, type CallInput, type TaskInput } from "@/app/leads/actions";
 import { validateLead, type LeadFormErrors, type LeadFormValues } from "@/lib/leadForm";
 import type { LeadProfile, TeamMember } from "@/lib/leadTypes";
 import { CALL_OUTCOMES, STAGES, STATUS_ORDER, TASK_TYPES } from "@/lib/status";
@@ -108,22 +109,34 @@ function localDateTime(days: number, hour: number) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-export function LogCallModal({ lead, open, onClose }: { lead: LeadProfile; open: boolean; onClose: () => void }) {
-  const [values, setValues] = useState({ outcome: "CONNECTED", minutes: "", notes: "", status: lead.status as string, followUp: "" });
+type SaveResult = Promise<{ ok: true } | { ok: false; error: string }>;
+
+type LogCallProps = {
+  open: boolean;
+  onClose: () => void;
+  /** "Amaka Obi · +234 803 123 4567" */
+  description: string;
+  /** The lead status to start from; null when there is no lead (the status field is hidden). */
+  status: LeadStatus | null;
+  onSave: (values: CallInput) => SaveResult;
+};
+
+export function LogCallModal({ open, onClose, description, status, onSave }: LogCallProps) {
+  const [values, setValues] = useState<CallInput>({ outcome: "CONNECTED", minutes: "", notes: "", status: status ?? "", followUp: "" });
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   useEffect(() => {
     if (open) {
-      setValues({ outcome: "CONNECTED", minutes: "", notes: "", status: lead.status, followUp: "" });
+      setValues({ outcome: "CONNECTED", minutes: "", notes: "", status: status ?? "", followUp: "" });
       setError(null);
     }
-  }, [open, lead.status]);
+  }, [open, status]);
 
   const save = () =>
     startTransition(async () => {
       try {
-        const res = await logCall(lead.id, values);
+        const res = await onSave(values);
         if (res.ok) onClose();
         else setError(res.error);
       } catch {
@@ -137,7 +150,7 @@ export function LogCallModal({ lead, open, onClose }: { lead: LeadProfile; open:
       onClose={onClose}
       width={560}
       title="Log call"
-      description={`${lead.name} · ${lead.phone}`}
+      description={description}
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>
@@ -171,13 +184,15 @@ export function LogCallModal({ lead, open, onClose }: { lead: LeadProfile; open:
           />
         </div>
         <div className="grid grid-cols-2 gap-4 max-sm:grid-cols-1">
-          <Select label="Status after the call" value={values.status} onChange={(e) => setValues({ ...values, status: e.target.value })}>
-            {STATUS_ORDER.map((s) => (
-              <option key={s} value={s}>
-                {STAGES[s].label}
-              </option>
-            ))}
-          </Select>
+          {status && (
+            <Select label="Status after the call" value={values.status} onChange={(e) => setValues({ ...values, status: e.target.value })}>
+              {STATUS_ORDER.map((s) => (
+                <option key={s} value={s}>
+                  {STAGES[s].label}
+                </option>
+              ))}
+            </Select>
+          )}
           <Input
             label="Follow up (optional)"
             type="datetime-local"
@@ -196,23 +211,35 @@ export function LogCallModal({ lead, open, onClose }: { lead: LeadProfile; open:
   );
 }
 
-export function NewTaskModal({ lead, team, open, onClose }: { lead: LeadProfile; team: TeamMember[]; open: boolean; onClose: () => void }) {
+type NewTaskProps = {
+  open: boolean;
+  onClose: () => void;
+  team: TeamMember[];
+  /** "Linked to Amaka Obi (LD-1042)" */
+  description: string;
+  /** Defaults to the signed-in user. */
+  defaultOwnerId?: string;
+  onSave: (values: TaskInput) => SaveResult;
+};
+
+export function NewTaskModal({ open, onClose, team, description, defaultOwnerId, onSave }: NewTaskProps) {
   const me = team.find((m) => m.me)?.id ?? "";
-  const [values, setValues] = useState({ title: "", type: "FOLLOW_UP", due: localDateTime(1, 10), ownerId: lead.owner?.id ?? me });
+  const owner = defaultOwnerId ?? me;
+  const [values, setValues] = useState<TaskInput>({ title: "", type: "FOLLOW_UP", due: localDateTime(1, 10), ownerId: owner });
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   useEffect(() => {
     if (open) {
-      setValues({ title: "", type: "FOLLOW_UP", due: localDateTime(1, 10), ownerId: lead.owner?.id ?? me });
+      setValues({ title: "", type: "FOLLOW_UP", due: localDateTime(1, 10), ownerId: owner });
       setError(null);
     }
-  }, [open, lead.owner?.id, me]);
+  }, [open, owner]);
 
   const save = () =>
     startTransition(async () => {
       try {
-        const res = await createTask(lead.id, { ...values, due: new Date(values.due).toISOString() });
+        const res = await onSave({ ...values, due: new Date(values.due).toISOString() });
         if (res.ok) onClose();
         else setError(res.error);
       } catch {
@@ -226,7 +253,7 @@ export function NewTaskModal({ lead, team, open, onClose }: { lead: LeadProfile;
       onClose={onClose}
       width={560}
       title="New task"
-      description={`Linked to ${lead.name} (${lead.code})`}
+      description={description}
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>
