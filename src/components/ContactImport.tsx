@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Papa from "papaparse";
-
+import { validateContactImportRow } from "@/schemas/contact-import";
 type Contact = {
   id: string;
   name: string;
@@ -69,33 +69,38 @@ export default function ContactImport() {
         }
 
         const seenPhones = new Set<string>();
+
         const parsedContacts: Contact[] = result.data.map((row, index) => {
+          const validation = validateContactImportRow({
+            name: row.name,
+            phone: row.phone,
+            email: row.email,
+            company: row.company,
+          });
+
           const name = row.name?.trim() ?? "";
           const phone = row.phone?.trim() ?? "";
           const email = row.email?.trim() ?? "";
           const company = row.company?.trim() ?? "";
           const normalizedPhone = phone.replace(/\D/g, "");
           const normalizedEmail = email.toLowerCase();
-          let error = "";
 
-          if (!name) error = "Name is required";
-          else if (name.length > 200) error = "Name is too long";
-          else if (!phone) error = "Phone number is required";
-          else if (normalizedPhone.length < 7) error = "Enter a valid phone number";
-          else if (phone.length > 40) error = "Phone number is too long";
-          else if (email && !EMAIL_RE.test(email)) error = "Invalid email address";
-          else if (email.length > 200) error = "Email is too long";
-          else if (company.length > 200) error = "Company is too long";
-          else if (seenPhones.has(normalizedPhone)) error = "Duplicate phone number in this CSV";
+          let error = validation.valid ? "" : validation.error;
 
-          if (normalizedPhone) seenPhones.add(normalizedPhone);
+          if (!error && seenPhones.has(normalizedPhone)) {
+            error = "Duplicate phone number in this CSV";
+          }
+
+          if (normalizedPhone) {
+            seenPhones.add(normalizedPhone);
+          }
 
           return {
             id: `${index}-${normalizedPhone || normalizedEmail}`,
-            name,
-            phone,
-            email,
-            company,
+            name: validation.valid ? validation.value.name : name,
+            phone: validation.valid ? validation.value.phone : phone,
+            email: validation.valid ? validation.value.email : email,
+            company: validation.valid ? validation.value.company : company,
             valid: !error,
             error,
             excluded: false,
