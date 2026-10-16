@@ -4,7 +4,8 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
-import { checkDuplicatePhone, createLead, type Duplicate } from "@/app/leads/actions";
+import { checkDuplicatePhone, createLead } from "@/app/leads/actions";
+import type { DuplicateMatch as Duplicate } from "@/lib/contactTypes";
 import { summaryLine, validateLead, type LeadFormErrors, type LeadFormField, type LeadFormValues } from "@/lib/leadForm";
 import type { TeamMember } from "@/lib/leadTypes";
 import { Alert, AlertAction, Button, DateField, Modal, Textarea } from "@/components/zedu";
@@ -134,18 +135,18 @@ export function AddLeadModal({ open, onClose, team }: Props) {
                     <AlertAction
                       onClick={() => {
                         onClose();
-                        router.push(`/leads/${duplicate.id}`);
+                        router.push(duplicate.lead ? `/leads/${duplicate.lead.id}` : `/contacts/${duplicate.id}`);
                       }}
                     >
-                      Open {duplicate.code}
+                      Open {duplicate.lead?.code ?? duplicate.code}
                     </AlertAction>
                     <AlertAction onClick={() => submit(true)}>Save as new lead</AlertAction>
                   </>
                 }
               >
-                {duplicate.name} ({duplicate.code}
-                {duplicate.owner ? `, owner ${duplicate.owner}` : ""}) already has this phone number. Open that lead instead, or
-                save this as a separate lead.
+                {duplicate.name} ({duplicate.lead?.code ?? duplicate.code}
+                {duplicate.lead?.owner ? `, owner ${duplicate.lead.owner}` : ""}) already has this phone number. Open that{" "}
+                {duplicate.lead ? "lead" : "contact"} instead, or save this as a separate lead.
               </Alert>
             )
           }

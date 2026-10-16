@@ -29,8 +29,8 @@ const CLIENT_TYPE: Record<TaskType, ClientType> = {
 type Row = Prisma.TaskGetPayload<{
   include: {
     owner: { select: { id: true; name: true } };
-    lead: { select: { id: true; name: true } };
-    call: { select: { id: true; calledAt: true; lead: { select: { name: true } } } };
+    lead: { select: { id: true; contact: { select: { name: true } } } };
+    call: { select: { id: true; calledAt: true; lead: { select: { contact: { select: { name: true } } } } } };
     user: { select: { name: true } };
   };
 }>;
@@ -62,7 +62,7 @@ export function toTaskItem(t: Row, now = new Date()): TaskItem {
     title: t.title,
     description: t.description ?? "",
     type: CLIENT_TYPE[t.type],
-    recordName: t.lead?.name ?? "No linked record",
+    recordName: t.lead?.contact.name ?? "No linked record",
     recordKind: t.lead ? "Lead" : "Internal",
     fromCall: t.call ? `From call · ${dayFmt.format(t.call.calledAt)}` : undefined,
     dueText,
@@ -85,7 +85,7 @@ export function toTaskItem(t: Row, now = new Date()): TaskItem {
     callId: t.callId,
     linkedCall: t.call
       ? {
-          person: t.call.lead?.name ?? t.lead?.name ?? "a lead",
+          person: t.call.lead?.contact.name ?? t.lead?.contact.name ?? "a lead",
           when: `${dayFmt.format(t.call.calledAt)}, ${timeFmt.format(t.call.calledAt)}`,
           outcome: "Connected",
           duration: "",
@@ -97,8 +97,9 @@ export function toTaskItem(t: Row, now = new Date()): TaskItem {
 
 const taskInclude = {
   owner: { select: { id: true, name: true } },
-  lead: { select: { id: true, name: true } },
-  call: { select: { id: true, calledAt: true, lead: { select: { name: true } } } },
+  // A lead's name lives on its contact.
+  lead: { select: { id: true, contact: { select: { name: true } } } },
+  call: { select: { id: true, calledAt: true, lead: { select: { contact: { select: { name: true } } } } } },
   user: { select: { name: true } },
 } as const;
 
@@ -110,5 +111,6 @@ export async function getTasks(): Promise<TaskItem[]> {
 }
 
 export async function getLeadOptions(): Promise<{ id: string; name: string }[]> {
-  return prisma.lead.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } });
+  const leads = await prisma.lead.findMany({ select: { id: true, contact: { select: { name: true } } }, orderBy: { contact: { name: "asc" } } });
+  return leads.map((l) => ({ id: l.id, name: l.contact.name }));
 }

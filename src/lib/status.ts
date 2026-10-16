@@ -49,6 +49,9 @@ export const TASK_TYPES: Record<TaskType, { label: string; kind: TaskKind }> = {
 /** LD-1042 */
 export const leadCode = (code: number) => `LD-${code}`;
 
+/** CT-0318 */
+export const contactCode = (code: number) => `CT-${String(code).padStart(4, "0")}`;
+
 export const initialsOf = (name: string | null | undefined) =>
   (name ?? "")
     .split(/\s+/)

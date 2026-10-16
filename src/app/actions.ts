@@ -66,6 +66,8 @@ export async function createTask(input: TaskInput): Promise<TaskMutation> {
   if (!type) return { ok: false, error: "Invalid task type" };
   const dueAt = toDueAt(input.dueDate, input.dueTime);
   if (!dueAt) return { ok: false, error: "A valid due date and time are required" };
+  // A task on a lead also belongs to the lead's contact.
+  const lead = input.leadId ? await prisma.lead.findUnique({ where: { id: input.leadId }, select: { contactId: true } }) : null;
   await prisma.task.create({
     data: {
       title: title.slice(0, 200),
@@ -76,6 +78,7 @@ export async function createTask(input: TaskInput): Promise<TaskMutation> {
       dueAt,
       ownerId: input.ownerId || null,
       leadId: input.leadId || null,
+      contactId: lead?.contactId ?? null,
       callId: input.callId || null,
       userId: me.id,
     },

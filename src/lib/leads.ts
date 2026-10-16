@@ -4,7 +4,8 @@ import { formatDate, formatTime } from "./format";
 import { prisma } from "./prisma";
 import type { LeadListData, LeadListParams, LeadProfile, LeadSort, LeadTab, ProfileTask, TeamMember, TimelineEntry } from "./leadTypes";
 import { PAGE_SIZE } from "./leadTypes";
-import { CALL_OUTCOMES, LOST_REASONS, initialsOf, leadCode } from "./status";
+import { phoneSearchDigits } from "./leadForm";
+import { CALL_OUTCOMES, LOST_REASONS, contactCode, initialsOf, leadCode } from "./status";
 
 export * from "./leadTypes";
 
@@ -14,7 +15,7 @@ export * from "./leadTypes";
 
 const DAY = 86_400_000;
 const weekday = new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short", day: "numeric" });
-const fullDate = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" });
+export const fullDate = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" });
 
 function startOfDay(d: Date) {
   const x = new Date(d);
@@ -66,6 +67,20 @@ export async function getTeam(meId: string): Promise<TeamMember[]> {
 
 type RawParams = Record<string, string | string[] | undefined>;
 
+/** Name, phone (in any format: 0803… also finds +234 803…), email or company contains the search text. */
+export function contactSearch(q: string): Prisma.ContactWhereInput {
+  const digits = phoneSearchDigits(q);
+  return {
+    OR: [
+      { name: { contains: q, mode: "insensitive" } },
+      { phone: { contains: q } },
+      ...(digits.length >= 3 ? [{ phoneKey: { contains: digits } }] : []),
+      { company: { contains: q, mode: "insensitive" } },
+      { email: { contains: q, mode: "insensitive" } },
+    ],
+  };
+}
+
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
 const list = (v: string | string[] | undefined) => one(v).split(",").filter(Boolean);
 
@@ -91,18 +106,9 @@ function tabWhere(tab: LeadTab, meId: string): Prisma.LeadWhereInput {
 
 function filterWhere(p: LeadListParams, opts: { withStatus: boolean }): Prisma.LeadWhereInput {
   const and: Prisma.LeadWhereInput[] = [];
-  if (p.q) {
-    and.push({
-      OR: [
-        { name: { contains: p.q, mode: "insensitive" } },
-        { phone: { contains: p.q } },
-        { company: { contains: p.q, mode: "insensitive" } },
-        { email: { contains: p.q, mode: "insensitive" } },
-      ],
-    });
-  }
+  if (p.q) and.push({ contact: contactSearch(p.q) });
   if (opts.withStatus && p.statuses.length) and.push({ status: { in: p.statuses } });
-  if (p.types.length) and.push({ type: { in: p.types } });
+  if (p.types.length) and.push({ contact: { type: { in: p.types } } });
   if (p.owners.length) {
     const ids = p.owners.filter((o) => o !== "none");
     and.push({ OR: [...(ids.length ? [{ ownerId: { in: ids } }] : []), ...(p.owners.includes("none") ? [{ ownerId: null }] : [])] });
@@ -113,7 +119,7 @@ function filterWhere(p: LeadListParams, opts: { withStatus: boolean }): Prisma.L
 const ORDER: Record<LeadSort, Prisma.LeadOrderByWithRelationInput[]> = {
   last: [{ lastInteractionAt: { sort: "desc", nulls: "last" } }, { createdAt: "desc" }],
   created: [{ createdAt: "desc" }],
-  name: [{ name: "asc" }],
+  name: [{ contact: { name: "asc" } }],
 };
 
 export async function getLeadList(p: LeadListParams, meId: string): Promise<LeadListData> {
@@ -141,6 +147,7 @@ export async function getLeadList(p: LeadListParams, meId: string): Promise<Lead
     skip: (page - 1) * PAGE_SIZE,
     take: PAGE_SIZE,
     include: {
+      contact: { select: { name: true, type: true, phone: true, company: true } },
       owner: { select: { id: true, name: true, email: true } },
       calls: { orderBy: { calledAt: "desc" }, take: 1, select: { outcome: true, calledAt: true } },
       tasks: { where: { done: false }, orderBy: { dueAt: "asc" }, take: 1, select: { title: true, dueAt: true } },
@@ -156,10 +163,10 @@ export async function getLeadList(p: LeadListParams, meId: string): Promise<Lead
       return {
         id: l.id,
         code: leadCode(l.code),
-        name: l.name,
-        type: l.type,
-        phone: l.phone,
-        company: l.company,
+        name: l.contact.name,
+        type: l.contact.type,
+        phone: l.contact.phone,
+        company: l.contact.company,
         status: l.status,
         owner: l.owner && ownerName ? { id: l.owner.id, name: ownerName, initials: initialsOf(ownerName) } : null,
         lastInteraction: call
@@ -179,27 +186,28 @@ export async function getLeadList(p: LeadListParams, meId: string): Promise<Lead
 /* ------------------------------------------------------------------------------------------------ */
 /* Profile                                                                                            */
 
-const stamp = (d: Date, now: Date) =>
+export const stamp = (d: Date, now: Date) =>
   `${formatDate(d, now)}, ${formatTime(d)}`;
 
-function duration(sec: number | null) {
+export function duration(sec: number | null) {
   if (!sec) return null;
   const min = Math.round(sec / 60);
   return min < 1 ? `${sec} sec` : `${min} min`;
 }
 
-const userName = (u: { name: string | null; email: string | null } | null) => (u ? u.name ?? u.email ?? "Someone" : "Someone");
+export const userName = (u: { name: string | null; email: string | null } | null) => (u ? u.name ?? u.email ?? "Someone" : "Someone");
 
 export async function getLeadProfile(id: string): Promise<LeadProfile | null> {
   const now = new Date();
   const lead = await prisma.lead.findUnique({
     where: { id },
     include: {
+      contact: true,
       owner: { select: { id: true, name: true, email: true } },
       createdBy: { select: { name: true, email: true } },
       tasks: {
         orderBy: [{ done: "asc" }, { dueAt: "asc" }],
-        include: { user: { select: { name: true, email: true } }, call: { select: { calledAt: true } } },
+        include: { owner: { select: { name: true, email: true } }, user: { select: { name: true, email: true } }, call: { select: { calledAt: true } } },
       },
       calls: { orderBy: { calledAt: "desc" }, include: { user: { select: { name: true, email: true } } } },
       notes: { orderBy: { createdAt: "desc" }, include: { author: { select: { name: true, email: true } } } },
@@ -210,7 +218,7 @@ export async function getLeadProfile(id: string): Promise<LeadProfile | null> {
           actor: { select: { name: true, email: true } },
           call: true,
           note: true,
-          task: { include: { user: { select: { name: true, email: true } }, call: { select: { calledAt: true } } } },
+          task: { include: { owner: { select: { name: true, email: true } }, user: { select: { name: true, email: true } }, call: { select: { calledAt: true } } } },
         },
       },
     },
@@ -219,7 +227,9 @@ export async function getLeadProfile(id: string): Promise<LeadProfile | null> {
 
   const ownerName = lead.owner ? userName(lead.owner) : null;
   const toTask = (t: (typeof lead.tasks)[number]): ProfileTask => {
-    const name = t.user ? userName(t.user) : null;
+    // Assignee; older tasks only have the creator-as-owner in userId.
+    const who = t.owner ?? t.user;
+    const name = who ? userName(who) : null;
     return {
       id: t.id,
       title: t.title,
@@ -271,11 +281,12 @@ export async function getLeadProfile(id: string): Promise<LeadProfile | null> {
   return {
     id: lead.id,
     code: leadCode(lead.code),
-    name: lead.name,
-    phone: lead.phone,
-    email: lead.email,
-    company: lead.company,
-    type: lead.type,
+    contact: { id: lead.contact.id, code: contactCode(lead.contact.code) },
+    name: lead.contact.name,
+    phone: lead.contact.phone,
+    email: lead.contact.email,
+    company: lead.contact.company,
+    type: lead.contact.type,
     status: lead.status,
     lostReason: lead.lostReason ? LOST_REASONS[lead.lostReason] : null,
     owner: lead.owner && ownerName ? { id: lead.owner.id, name: ownerName, initials: initialsOf(ownerName) } : null,
