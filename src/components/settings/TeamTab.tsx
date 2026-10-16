@@ -18,6 +18,7 @@ import {
   TableRow,
 } from "@/components/zedu";
 import { apiFetch } from "@/lib/auth/client";
+import { InvitationsSkeleton, TeamMembersSkeleton } from "./SettingsSkeleton";
 import type { AccessRequestDTO, InviteDTO } from "@/lib/invites";
 import type { TeamMemberDetail } from "@/lib/settings";
 
@@ -205,7 +206,7 @@ export function TeamTab({ currentUserId, currentUserRole }: TeamTabProps) {
         }
       >
         {loading && !members ? (
-          <div className="p-6 text-z-small text-z-fg-muted">Loading team members…</div>
+          <TeamMembersSkeleton />
         ) : members && members.length > 0 ? (
           <Table>
             <thead>
@@ -298,10 +299,9 @@ export function TeamTab({ currentUserId, currentUserRole }: TeamTabProps) {
         />
       )}
 
-      {/* Pending Invitations */}
       <Card bleed title="Pending & Past Invitations" icon={<MailPlus aria-hidden />}>
         {invites === null ? (
-          <p className="p-6 text-z-small text-z-fg-muted">Loading invitations…</p>
+          <InvitationsSkeleton />
         ) : invites.length === 0 ? (
           <p className="p-6 text-z-small text-z-fg-muted">No invitations sent yet.</p>
         ) : (
