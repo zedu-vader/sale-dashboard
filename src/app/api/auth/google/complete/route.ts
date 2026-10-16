@@ -1,7 +1,8 @@
 import { getServerSession } from "next-auth";
 import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
 import { startSession } from "@/lib/auth";
-import { redirectTo, safeNext } from "@/lib/auth/http";
+import { safeNext } from "@/lib/auth/http";
 import { authOptions } from "@/lib/auth/google";
 import { prisma } from "@/lib/prisma";
 
@@ -16,7 +17,7 @@ export async function GET(req: Request) {
   const userId = (session?.user as { id?: string } | undefined)?.id;
   const user = userId ? await prisma.user.findUnique({ where: { id: userId } }) : null;
 
-  if (!user || user.disabledAt) return redirectTo("/login?error=AccessDenied");
+  if (!user || user.disabledAt) return NextResponse.redirect(new URL("/login?error=AccessDenied", url));
 
   await startSession(
     { id: user.id, email: user.email, name: user.name, role: user.role, disabledAt: user.disabledAt },
@@ -27,5 +28,5 @@ export async function GET(req: Request) {
   const jar = cookies();
   for (const name of NEXTAUTH_COOKIES) jar.set(name, "", { path: "/", maxAge: 0 });
 
-  return redirectTo(safeNext(url.searchParams.get("next")));
+  return NextResponse.redirect(new URL(safeNext(url.searchParams.get("next")), url));
 }
