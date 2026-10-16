@@ -96,63 +96,64 @@ export function ProfileTab({ user }: ProfileTabProps) {
   }
 
   return (
-    <div className="flex flex-col gap-6 max-w-2xl">
-      {/* Personal Details */}
-      <Card title="Personal Information" icon={<User aria-hidden />}>
-        <form onSubmit={handleUpdateProfile} className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <FieldLabel htmlFor="display-name" required>
-              Full name
-            </FieldLabel>
-            <Input
-              id="display-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Agnes Okafor"
-            />
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <FieldLabel htmlFor="email-address">Email address</FieldLabel>
-            <Input id="email-address" value={user.email ?? ""} disabled readOnly />
-            <p className="text-z-caption text-z-fg-muted">
-              Email is managed via your invitation account and cannot be changed directly.
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <FieldLabel htmlFor="user-role">Role</FieldLabel>
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-z-sm bg-z-sunken px-2.5 py-1 text-z-small font-medium text-z-fg">
-                <Shield className="size-3.5 text-z-icon" />
-                {user.role === "ADMIN" ? "Administrator" : "Sales Representative"}
-              </span>
+    <div className="flex flex-col gap-6">
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Personal Details */}
+        <Card title="Personal Information" icon={<User aria-hidden />}>
+          <form onSubmit={handleUpdateProfile} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <FieldLabel htmlFor="display-name" required>
+                Full name
+              </FieldLabel>
+              <Input
+                id="display-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Agnes Okafor"
+              />
             </div>
-          </div>
 
-          {nameNotice && (
-            <p
-              role="status"
-              className={`rounded-z-md px-3 py-2 text-z-small ${
-                nameNotice.type === "success"
-                  ? "bg-z-status-success/10 text-z-fg-success"
-                  : "bg-z-status-danger/10 text-z-fg-danger"
-              }`}
-            >
-              {nameNotice.text}
-            </p>
-          )}
+            <div className="flex flex-col gap-1.5">
+              <FieldLabel htmlFor="email-address">Email address</FieldLabel>
+              <Input id="email-address" value={user.email ?? ""} disabled readOnly />
+              <p className="text-z-caption text-z-fg-muted">
+                Email is managed via your invitation account and cannot be changed directly.
+              </p>
+            </div>
 
-          <div className="pt-2">
-            <Button type="submit" disabled={nameSaving}>
-              {nameSaving ? "Saving..." : "Save changes"}
-            </Button>
-          </div>
-        </form>
-      </Card>
+            <div className="flex flex-col gap-1.5">
+              <FieldLabel htmlFor="user-role">Role</FieldLabel>
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-z-sm bg-z-sunken px-2.5 py-1 text-z-small font-medium text-z-fg">
+                  <Shield className="size-3.5 text-z-icon" />
+                  {user.role === "ADMIN" ? "Administrator" : "Sales Representative"}
+                </span>
+              </div>
+            </div>
 
-      {/* Change Password */}
-      <Card title="Password & Security" icon={<KeyRound aria-hidden />}>
+            {nameNotice && (
+              <p
+                role="status"
+                className={`rounded-z-md px-3 py-2 text-z-small ${
+                  nameNotice.type === "success"
+                    ? "bg-z-status-success/10 text-z-fg-success"
+                    : "bg-z-status-danger/10 text-z-fg-danger"
+                }`}
+              >
+                {nameNotice.text}
+              </p>
+            )}
+
+            <div className="pt-2">
+              <Button type="submit" disabled={nameSaving}>
+                {nameSaving ? "Saving..." : "Save changes"}
+              </Button>
+            </div>
+          </form>
+        </Card>
+
+        {/* Change Password */}
+        <Card title="Password & Security" icon={<KeyRound aria-hidden />}>
         <form onSubmit={handleChangePassword} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <FieldLabel htmlFor="current-pw" required>
@@ -213,6 +214,7 @@ export function ProfileTab({ user }: ProfileTabProps) {
           </div>
         </form>
       </Card>
+      </div>
 
       {/* Active Session */}
       <Card title="Current Session" icon={<LogOut aria-hidden />}>

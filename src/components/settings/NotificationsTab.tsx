@@ -18,9 +18,10 @@ export function NotificationsTab() {
   }
 
   return (
-    <div className="flex flex-col gap-6 max-w-2xl">
-      {/* Task & Activity Alerts */}
-      <Card title="Task & Activity Notifications" icon={<Bell aria-hidden />}>
+    <div className="flex flex-col gap-6">
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Task & Activity Alerts */}
+        <Card title="Task & Activity Notifications" icon={<Bell aria-hidden />}>
         <div className="flex flex-col divide-y divide-z-line">
           <label className="flex items-start justify-between gap-4 py-3 first:pt-0 last:pb-0 cursor-pointer">
             <div className="flex flex-col">
@@ -106,6 +107,7 @@ export function NotificationsTab() {
           </div>
         </div>
       </Card>
+      </div>
 
       {saved && (
         <p role="status" className="rounded-z-md bg-z-status-success/10 px-3 py-2 text-z-small text-z-fg-success">

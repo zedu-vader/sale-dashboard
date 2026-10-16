@@ -46,7 +46,7 @@ const TASK_TYPES = [
 
 export function PipelineTab() {
   return (
-    <div className="flex flex-col gap-6 max-w-4xl">
+    <div className="flex flex-col gap-6">
       {/* Pipeline Stages */}
       <Card title="Lead Pipeline Stages" icon={<GitFork aria-hidden />}>
         <p className="text-z-small text-z-fg-muted mb-2">
