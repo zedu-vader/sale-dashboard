@@ -171,6 +171,16 @@ export function TeamTab({ currentUserId, currentUserRole }: TeamTabProps) {
     actInvite(i.id, () => apiFetch(`/api/invites/${i.id}`, { method: "DELETE" }), "Invite revoked.");
   const dismissRequest = (r: AccessRequestDTO) =>
     actInvite(r.id, () => apiFetch(`/api/access-requests/${r.id}`, { method: "DELETE" }), "Request dismissed.");
+  async function copyInvite(i: InviteDTO, what: "code" | "link") {
+    if (!i.token) return;
+    const text = what === "code" ? i.token : `${window.location.origin}/setup?token=${encodeURIComponent(i.token)}`;
+    try {
+      await navigator.clipboard.writeText(text);
+      setNotice({ type: "success", text: what === "code" ? "Setup code copied." : "Invite link copied." });
+    } catch {
+      setNotice({ type: "error", text: "Couldn't copy. Copy it manually instead." });
+    }
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -305,7 +315,7 @@ export function TeamTab({ currentUserId, currentUserRole }: TeamTabProps) {
         ) : invites.length === 0 ? (
           <p className="p-6 text-z-small text-z-fg-muted">No invitations sent yet.</p>
         ) : (
-          <InviteTable invites={invites} busyId={busyId} onResend={resendInvite} onRevoke={revokeInvite} />
+          <InviteTable invites={invites} busyId={busyId} onResend={resendInvite} onCopy={copyInvite} onRevoke={revokeInvite} />
         )}
       </Card>
 

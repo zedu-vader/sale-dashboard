@@ -20,7 +20,7 @@ export default async function ContactsPage({ searchParams }: Props) {
   const name = session.user.name;
 
   return (
-    <AppShell user={{ name, email: session.user.email, image: session.user.image }} {...shell}>
+    <AppShell user={{ name, email: session.user.email, image: session.user.image, role: session.user.role }} {...shell}>
       <ContactsView params={params} data={data} />
     </AppShell>
   );
