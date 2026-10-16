@@ -32,6 +32,8 @@ type Props = {
   openTaskCount: number;
   /** Shows the red dot on the notifications bell. */
   unread: boolean;
+  /** Active nav item. Defaults to "Dashboard". */
+  active?: string;
   children: ReactNode;
 };
 
@@ -59,7 +61,8 @@ function useWideScreen() {
 const isActive = (href: string, pathname: string) =>
   href !== "#" && (href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`));
 
-export function AppShell({ user, openTaskCount, unread, children }: Props) {
+/** `active` (a nav label) overrides the URL-based active item. */
+export function AppShell({ user, openTaskCount, unread, active, children }: Props) {
   const wide = useWideScreen();
   const pathname = usePathname();
   const router = useRouter();
@@ -117,7 +120,7 @@ export function AppShell({ user, openTaskCount, unread, children }: Props) {
             label={n.label}
             href={n.href}
             icon={n.icon}
-            active={isActive(n.href, pathname)}
+            active={active ? n.label === active : isActive(n.href, pathname)}
             count={n.tasks && openTaskCount > 0 ? openTaskCount : undefined}
             onClick={onNavigate}
           />
