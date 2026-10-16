@@ -225,6 +225,8 @@ model Lead {
 // (or converted into) a Lead — calls then flow through that lead.
 model Contact {
   id        String    @id @default(cuid())
+  /// Human-readable ID, shown as CT-####. Starts at 1001.
+  code      Int       @unique @default(autoincrement())
   name      String
   phone     String
   email     String?

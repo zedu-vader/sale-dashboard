@@ -1,4 +1,5 @@
-import type { Stage } from "@/components/zedu";
+import type { Due, Stage, TaskKind } from "@/components/zedu";
+import type { TimelineEntry } from "@/lib/leadTypes";
 
 export const CONTACT_TYPES = ["INDIVIDUAL", "BUSINESS"] as const;
 export type ContactType = (typeof CONTACT_TYPES)[number];
@@ -11,6 +12,8 @@ export const TYPE_LABEL: Record<ContactType, string> = {
 /** Pipeline record a contact is linked to, if the team has reached out. */
 export interface ContactLead {
   id: string;
+  /** Human-readable lead code, e.g. "LD-1042". */
+  code: string;
   name: string;
   /** LeadStatus enum value; label lookup happens in the UI. */
   status: string;
@@ -28,6 +31,8 @@ export interface DuplicateHit {
 
 export interface Contact {
   id: string;
+  /** Human-readable code, e.g. "CT-1001". */
+  code: string;
   name: string;
   phone: string;
   email: string | null;
@@ -35,6 +40,8 @@ export interface Contact {
   type: ContactType | null;
   notes: string | null;
   createdAt: string;
+  /** Short "what happened last" line for the list, e.g. "Call · Oct 14". */
+  lastInteraction: string | null;
   lead: ContactLead | null;
   duplicates: DuplicateHit[];
 }
@@ -48,24 +55,28 @@ export type NewContact = {
   notes: string | null;
 };
 
-export interface CallEntry {
-  id: string;
-  outcome: string;
-  calledAt: string;
-}
-
-export interface TaskEntry {
+/** A task shown on the contact profile. Lead tasks are real records; "store" tasks are the JSON-file mock list. */
+export interface ContactTask {
   id: string;
   title: string;
-  subtitle: string | null;
-  dueAt: string;
+  kind: TaskKind | null;
   done: boolean;
-  owner: string;
+  due: { due: Due; text: string };
+  owner: { name: string; initials: string } | null;
+  fromCall: string | null;
+  source: "lead" | "store";
 }
 
 export interface ContactDetail extends Contact {
-  calls: CallEntry[];
-  tasks: TaskEntry[];
+  timeline: TimelineEntry[];
+  calls: TimelineEntry[];
+  /** Notes left on the linked lead (the contact's own free-text notes stay in `notes`). */
+  notesTimeline: TimelineEntry[];
+  tasks: ContactTask[];
+  nextTask: ContactTask | null;
+  counts: { calls: number; openTasks: number; tasks: number; notes: number };
+  /** Other contacts at the same company (this one excluded). */
+  sameCompany: { id: string; name: string; initials: string }[];
 }
 
 export const OUTCOME_LABEL: Record<string, string> = {
@@ -74,6 +85,9 @@ export const OUTCOME_LABEL: Record<string, string> = {
   NOT_INTERESTED: "Not interested",
   OTHER: "Other",
 };
+
+/** CT-1001 (padded to at least four digits). */
+export const contactCode = (code: number) => `CT-${String(code).padStart(4, "0")}`;
 
 /** Digits only; a local Nigerian "0…" number is normalised to international form for comparison. */
 export function phoneKey(phone: string) {

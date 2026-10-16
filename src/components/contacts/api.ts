@@ -40,3 +40,7 @@ export const updateContact = (id: string, contact: NewContact, options?: { leadI
 export const deleteContact = (id: string) => request<{ ok: true }>(`/api/contacts/${id}`, { method: "DELETE" });
 
 export const convertContact = (id: string) => request<Contact>(`/api/contacts/${id}/convert`, { method: "POST" });
+
+/** Toggles one of the JSON-file tasks (the mock list, not prisma tasks). */
+export const toggleStoreTask = (id: string, done: boolean) =>
+  request<{ ok: true }>(`/api/tasks/${id}`, { method: "PATCH", body: JSON.stringify({ done }) });

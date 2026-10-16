@@ -1,11 +1,17 @@
-import { Lead, LeadStatus, LeadType } from "@prisma/client";
+import { CallOutcome, Lead, LeadStatus, LeadType } from "@prisma/client";
 import { prisma } from "./prisma";
+import { dueLabel, getLeadProfile } from "./leads";
+import { formatDate, formatTime } from "./format";
+import { TASK_TYPES, leadCode } from "./status";
 import { listTasks } from "./tasks-store";
+import type { ProfileTask, TimelineEntry } from "./leadTypes";
 import {
   CONTACT_TYPES,
+  contactCode,
   phoneKey,
   type Contact,
   type ContactDetail,
+  type ContactTask,
   type ContactType,
   type DuplicateHit,
   type NewContact,
@@ -15,6 +21,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type ContactRow = {
   id: string;
+  code: number;
   name: string;
   phone: string;
   email: string | null;
@@ -22,7 +29,7 @@ type ContactRow = {
   type: LeadType | null;
   notes: string | null;
   createdAt: Date;
-  lead: Lead | null;
+  lead: (Lead & { calls?: { outcome: CallOutcome; calledAt: Date }[] }) | null;
 };
 
 export type ValidationResult =
@@ -78,8 +85,10 @@ export async function findDuplicates(input: { phone: string; email?: string | nu
 }
 
 function toContact(c: ContactRow, duplicates: DuplicateHit[]): Contact {
+  const lastCall = c.lead?.calls?.[0];
   return {
     id: c.id,
+    code: contactCode(c.code),
     name: c.name,
     phone: c.phone,
     email: c.email,
@@ -87,9 +96,13 @@ function toContact(c: ContactRow, duplicates: DuplicateHit[]): Contact {
     type: c.type as ContactType | null,
     notes: c.notes,
     createdAt: c.createdAt.toISOString(),
+    lastInteraction: lastCall
+      ? `${lastCall.outcome === CallOutcome.NO_ANSWER ? "No answer" : "Call"} · ${formatDate(lastCall.calledAt)}`
+      : null,
     lead: c.lead
       ? {
           id: c.lead.id,
+          code: leadCode(c.lead.code),
           name: c.lead.name,
           status: c.lead.status,
           owner: c.lead.ownerName,
@@ -100,11 +113,11 @@ function toContact(c: ContactRow, duplicates: DuplicateHit[]): Contact {
   };
 }
 
-/** Every contact with its pipeline link and duplicate hints, newest first. */
+/** Every contact with its pipeline link, last interaction and duplicate hints, newest first. */
 export async function listContacts(): Promise<Contact[]> {
   const contacts = await prisma.contact.findMany({
     orderBy: { createdAt: "desc" },
-    include: { lead: true },
+    include: { lead: { include: { calls: { orderBy: { calledAt: "desc" }, take: 1 } } } },
   });
 
   // Group by shared phone / email so each contact can point at its duplicates.
@@ -131,35 +144,82 @@ export async function listContacts(): Promise<Contact[]> {
   });
 }
 
+const toLeadTask = (t: ProfileTask): ContactTask => ({ ...t, kind: TASK_TYPES[t.type].kind, source: "lead" });
+
+const STORE_KIND: Record<string, ContactTask["kind"]> = { Call: "call", Email: "email", Note: "other" };
+
+function toStoreTask(t: { id: string; title: string; type: string; dueAt: string; done: boolean; owner: string }): ContactTask {
+  return {
+    id: t.id,
+    title: t.title,
+    kind: STORE_KIND[t.type] ?? "other",
+    done: t.done,
+    due: dueLabel({ dueAt: new Date(t.dueAt), done: t.done, completedAt: null }),
+    owner: { name: t.owner, initials: t.owner.slice(0, 2).toUpperCase() },
+    fromCall: null,
+    source: "store",
+  };
+}
+
 export async function getContact(id: string): Promise<ContactDetail | null> {
   const contact = await prisma.contact.findUnique({
     where: { id },
-    include: { lead: { include: { calls: { orderBy: { calledAt: "desc" } } } } },
+    include: { lead: true },
   });
   if (!contact) return null;
 
   const base = toContact(contact, []);
-  // Tasks are free-text matched on the contact name (Task has no contact FK yet).
+
+  // Linked contacts borrow the lead's profile (timeline, calls, notes, real tasks).
+  const [profile, storeTasks, sameCompany] = await Promise.all([
+    contact.leadId ? getLeadProfile(contact.leadId).catch(() => null) : Promise.resolve(null),
+    listTasks(),
+    contact.company
+      ? prisma.contact.findMany({
+          where: { company: { equals: contact.company, mode: "insensitive" }, id: { not: contact.id } },
+          select: { id: true, name: true },
+          orderBy: { createdAt: "asc" },
+          take: 10,
+        })
+      : Promise.resolve([]),
+  ]);
+
+  // Tasks without a pipeline link are matched on the contact name (Task has no contact FK yet).
   const name = contact.name.toLowerCase();
-  const tasks = (await listTasks()).filter(
-    (t) => t.lead.toLowerCase() === name || t.title.toLowerCase().includes(name),
-  );
+  const matched = storeTasks
+    .filter((t) => t.lead.toLowerCase() === name || t.title.toLowerCase().includes(name))
+    .sort((a, b) => Number(a.done) - Number(b.done) || +new Date(a.dueAt) - +new Date(b.dueAt));
+
+  const tasks = profile ? profile.tasks.map(toLeadTask) : matched.map(toStoreTask);
+  const nextTask = profile
+    ? profile.nextTask
+      ? toLeadTask(profile.nextTask)
+      : null
+    : matched.find((t) => !t.done)
+      ? toStoreTask(matched.find((t) => !t.done)!)
+      : null;
+
+  const timeline: TimelineEntry[] = profile?.timeline ?? [
+    {
+      id: `created-${contact.id}`,
+      kind: "created",
+      actor: "Someone",
+      action: "created this contact",
+      time: `${formatDate(contact.createdAt)}, ${formatTime(contact.createdAt)}`,
+      detail: "Added manually",
+    },
+  ];
 
   return {
     ...base,
-    calls: (contact.lead?.calls ?? []).map((call) => ({
-      id: call.id,
-      outcome: call.outcome,
-      calledAt: call.calledAt.toISOString(),
-    })),
-    tasks: tasks.map((t) => ({
-      id: t.id,
-      title: t.title,
-      subtitle: t.notes || null,
-      dueAt: t.dueAt,
-      done: t.done,
-      owner: t.owner,
-    })),
+    lastInteraction: profile?.lastInteraction ?? null,
+    timeline,
+    calls: profile?.calls ?? [],
+    notesTimeline: profile?.notes ?? [],
+    tasks,
+    nextTask,
+    counts: profile?.counts ?? { calls: 0, openTasks: tasks.filter((t) => !t.done).length, tasks: tasks.length, notes: 0 },
+    sameCompany: sameCompany.map((c) => ({ ...c, initials: c.name.split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase() ?? "").join("") || "?" })),
   };
 }
 

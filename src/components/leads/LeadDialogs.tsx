@@ -108,7 +108,10 @@ function localDateTime(days: number, hour: number) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-export function LogCallModal({ lead, open, onClose }: { lead: LeadProfile; open: boolean; onClose: () => void }) {
+/** The lead fields Log call needs; a contact's linked lead can supply the same shape. */
+export type CallLead = Pick<LeadProfile, "id" | "name" | "phone" | "status">;
+
+export function LogCallModal({ lead, open, onClose }: { lead: CallLead; open: boolean; onClose: () => void }) {
   const [values, setValues] = useState({ outcome: "CONNECTED", minutes: "", notes: "", status: lead.status as string, followUp: "" });
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -196,7 +199,10 @@ export function LogCallModal({ lead, open, onClose }: { lead: LeadProfile; open:
   );
 }
 
-export function NewTaskModal({ lead, team, open, onClose }: { lead: LeadProfile; team: TeamMember[]; open: boolean; onClose: () => void }) {
+/** The lead fields New task needs; a contact's linked lead can supply the same shape. */
+export type TaskLead = Pick<LeadProfile, "id" | "code" | "name" | "owner">;
+
+export function NewTaskModal({ lead, team, open, onClose }: { lead: TaskLead; team: TeamMember[]; open: boolean; onClose: () => void }) {
   const me = team.find((m) => m.me)?.id ?? "";
   const [values, setValues] = useState({ title: "", type: "FOLLOW_UP", due: localDateTime(1, 10), ownerId: lead.owner?.id ?? me });
   const [error, setError] = useState<string | null>(null);
