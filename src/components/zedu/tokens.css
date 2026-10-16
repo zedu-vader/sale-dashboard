@@ -23,6 +23,7 @@
   --z-bg-danger: #d92d20;
   --z-bg-danger-hover: #b42318;
   --z-bg-danger-subtle: #fef3f2;
+  --z-bg-warning-subtle: #fffaeb;
 
   /* color/text */
   --z-text-primary: #18181c;
@@ -85,6 +86,16 @@
   --z-pill-lost-bg: #fee4e2;
   --z-pill-lost-fg: #b42318;
 
+  /* color/task — stored task status (overdue is derived and shown with the due label) */
+  --z-task-pending-bg: #dbeafe;
+  --z-task-pending-fg: #1d4ed8;
+  --z-task-completed-bg: #d1fadf;
+  --z-task-completed-fg: #067647;
+
+  /* Lead type dots */
+  --z-lead-individual: #6366f1;
+  --z-lead-business: #f97316;
+
   /* shadow colours */
   --z-shadow-xs: rgba(16, 24, 40, 0.05);
   --z-shadow-sm: rgba(16, 24, 40, 0.06);
@@ -106,6 +117,7 @@
   --color-z-danger: var(--z-bg-danger);
   --color-z-danger-hover: var(--z-bg-danger-hover);
   --color-z-danger-subtle: var(--z-bg-danger-subtle);
+  --color-z-warning-subtle: var(--z-bg-warning-subtle);
 
   --color-z-fg: var(--z-text-primary);
   --color-z-fg-secondary: var(--z-text-secondary);
@@ -160,6 +172,12 @@
   --color-z-pill-won-fg: var(--z-pill-won-fg);
   --color-z-pill-lost: var(--z-pill-lost-bg);
   --color-z-pill-lost-fg: var(--z-pill-lost-fg);
+  --color-z-task-pending: var(--z-task-pending-bg);
+  --color-z-task-pending-fg: var(--z-task-pending-fg);
+  --color-z-task-completed: var(--z-task-completed-bg);
+  --color-z-task-completed-fg: var(--z-task-completed-fg);
+  --color-z-lead-individual: var(--z-lead-individual);
+  --color-z-lead-business: var(--z-lead-business);
 
   /* ZEDU/Shadow/*, ZEDU/Focus/* */
   --shadow-z-xs: 0 1px 2px 0 var(--z-shadow-xs);
