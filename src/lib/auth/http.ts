@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { appUrl } from "./config";
 
 export const fail = (error: string, status = 400) => NextResponse.json({ error }, { status });
 
@@ -21,6 +22,9 @@ export function sameOrigin(req: Request) {
 export function safeNext(v: string | null | undefined, fallback = "/") {
   return v && v.startsWith("/") && !v.startsWith("//") && !v.startsWith("/\\") ? v : fallback;
 }
+
+/** Redirect within the app. Uses the public URL: behind the proxy, req.url is the container's localhost address. */
+export const redirectTo = (path: string) => NextResponse.redirect(new URL(path, appUrl()));
 
 export async function readJson(req: Request): Promise<Record<string, unknown> | null> {
   const body = await req.json().catch(() => null);
