@@ -60,6 +60,16 @@ export function InvitesPage() {
   const resend = (i: InviteDTO) =>
     act(i.id, () => apiFetch(`/api/invites/${i.id}/resend`, { method: "POST" }), `Invite re-sent to ${i.email}.`);
   const revoke = (i: InviteDTO) => act(i.id, () => apiFetch(`/api/invites/${i.id}`, { method: "DELETE" }), "Invite revoked.");
+  async function copy(i: InviteDTO, what: "code" | "link") {
+    if (!i.token) return;
+    const text = what === "code" ? i.token : `${window.location.origin}/setup?token=${encodeURIComponent(i.token)}`;
+    try {
+      await navigator.clipboard.writeText(text);
+      setNotice(what === "code" ? "Setup code copied." : "Invite link copied.");
+    } catch {
+      setNotice("Couldn't copy. Copy it manually instead.");
+    }
+  }
   const dismiss = (r: AccessRequestDTO) => act(r.id, () => apiFetch(`/api/access-requests/${r.id}`, { method: "DELETE" }), "Request dismissed.");
 
   return (
@@ -100,7 +110,7 @@ export function InvitesPage() {
             </Button>
           </div>
         ) : (
-          <InviteTable invites={invites} busyId={busyId} onResend={resend} onRevoke={revoke} />
+          <InviteTable invites={invites} busyId={busyId} onResend={resend} onCopy={copy} onRevoke={revoke} />
         )}
       </Card>
 
