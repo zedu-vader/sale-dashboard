@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import { getServerSession } from "next-auth";
 import { notFound, redirect } from "next/navigation";
-import { authOptions } from "@/lib/auth";
+import { getSession } from "@/lib/auth";
 import { getContactProfile, resolveContactId } from "@/lib/contacts";
 import { getTeam } from "@/lib/leads";
 import { getShellCounts } from "@/lib/shell";
@@ -20,9 +19,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 const TABS = ["activity", "calls", "tasks", "notes"] as const;
 
 export default async function ContactPage({ params, searchParams }: Props) {
-  const session = await getServerSession(authOptions);
-  const meId = (session?.user as { id?: string } | undefined)?.id;
-  if (!session?.user || !meId) redirect("/");
+  const session = await getSession();
+  if (!session) redirect("/login");
+  const meId = session.user.id;
 
   // A merged contact's link opens the record it was merged into.
   const id = await resolveContactId(params.id);
@@ -32,7 +31,7 @@ export default async function ContactPage({ params, searchParams }: Props) {
   const [contact, team, shell] = await Promise.all([getContactProfile(id), getTeam(meId), getShellCounts()]);
   if (!contact) notFound();
 
-  const name = session.user.name ?? session.user.email ?? "there";
+  const name = session.user.name;
   const tab = TABS.find((t) => t === searchParams.tab) ?? "activity";
   const lead = searchParams.lead === "new" || searchParams.lead === "link" ? searchParams.lead : null;
 

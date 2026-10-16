@@ -1,9 +1,8 @@
 "use server";
 
 import { ActivityType, LeadStatus, LeadType, LostReason, TaskType } from "@prisma/client";
-import { getServerSession } from "next-auth";
 import { revalidatePath } from "next/cache";
-import { authOptions } from "@/lib/auth";
+import { getSession } from "@/lib/auth";
 import type { ContactFormValues, DuplicateMatch, LinkableLead, MergeChoice } from "@/lib/contactTypes";
 import { pairIds } from "@/lib/contacts";
 import { phoneKey, validateLead, type LeadFormErrors } from "@/lib/leadForm";
@@ -12,10 +11,9 @@ import { contactTarget, findDuplicateContacts, recordCall, recordNote, recordTas
 import { contactCode, leadCode } from "@/lib/status";
 
 async function requireUser() {
-  const session = await getServerSession(authOptions);
-  const id = (session?.user as { id?: string } | undefined)?.id;
-  if (!id) throw new Error("Unauthorized");
-  return { id, name: session!.user!.name ?? session!.user!.email ?? "Someone" };
+  const session = await getSession();
+  if (!session) throw new Error("Unauthorized");
+  return { id: session.user.id, name: session.user.name || session.user.email };
 }
 
 function refresh() {
