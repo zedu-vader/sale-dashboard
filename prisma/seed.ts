@@ -129,7 +129,8 @@ async function main() {
 
   // The leads from the Figma frames, created through the same paths the app uses.
   const named = [
-    { name: "Amaka Obi", phone: "+234 803 123 4567", email: "amaka@lagoonfoods.ng", company: "Lagoon Foods", type: LeadType.BUSINESS, status: LeadStatus.INTERESTED, owner: agnes, created: 6 },
+    { name: "Amaka Obi", phone: "+234 803 123 4568", email: "amaka@lagoonfoods.ng", company: "Lagoon Foods", type: LeadType.BUSINESS, status: LeadStatus.INTERESTED, owner: agnes, created: 6 },
+    { name: "Tunde Adebayo", phone: "+234 803 123 4567", email: "tunde.adebayo@flourish.co", company: "Flourish Ltd", type: LeadType.INDIVIDUAL, status: LeadStatus.INTERESTED, owner: ibrahim, created: 5 },
     { name: "Tunde Bakare", phone: "+234 802 555 0198", email: "tunde@bakarelogistics.com", company: "Bakare Logistics", type: LeadType.BUSINESS, status: LeadStatus.FOLLOW_UP, owner: agnes, created: 9 },
     { name: "Chiamaka Eze", phone: "+234 809 771 2203", email: null, company: null, type: LeadType.INDIVIDUAL, status: LeadStatus.NEW, owner: null, created: 0 },
     { name: "Femi Adeyemi", phone: "+234 816 330 9120", email: "femi@brightpathschools.ng", company: "Brightpath Schools", type: LeadType.BUSINESS, status: LeadStatus.CONTACTED, owner: ibrahim, created: 4 },
@@ -170,7 +171,7 @@ async function main() {
     data: { leadId: amaka.id, outcome: CallOutcome.CONNECTED, calledAt: at(2, 11, 20), durationSec: 180, notes: "Asked for the outlet list before quoting.", userId: agnes.id },
   });
   await prisma.task.create({
-    data: { title: "Confirm outlet list with Amaka", type: TaskType.CALL, dueAt: at(2, 16), done: true, completedAt: at(2, 16), leadId: amaka.id, userId: agnes.id, callId: earlyCall.id },
+    data: { title: "Confirm outlet list with Amaka", description: "Confirm the outlet list before quoting.", type: TaskType.CALL, dueAt: at(2, 16), done: true, completedAt: at(2, 16), ownerId: agnes.id, leadId: amaka.id, userId: agnes.id, callId: earlyCall.id },
   });
   const note = await prisma.note.create({
     data: { leadId: amaka.id, authorId: ibrahim.id, body: "Spoke to her assistant, Tolu. Best time to call is mornings before 11 AM.", createdAt: at(1, 16, 5) },
@@ -179,10 +180,10 @@ async function main() {
     data: { leadId: amaka.id, outcome: CallOutcome.CONNECTED, calledAt: at(0, 10, 12), durationSec: 240, notes: "Wants pricing for 3 outlets (Lekki, Yaba, Ikeja). Send proposal by Friday.", userId: agnes.id },
   });
   const task = await prisma.task.create({
-    data: { title: "Send proposal to Lagoon Foods", type: TaskType.FOLLOW_UP, dueAt: at(0, 15), leadId: amaka.id, userId: agnes.id, callId: call.id, createdAt: at(0, 10, 15) },
+    data: { title: "Send proposal to Lagoon Foods", description: "Confirm pricing for 3 outlets and send the proposal before Friday.", type: TaskType.FOLLOW_UP, dueAt: at(0, 15), ownerId: agnes.id, leadId: amaka.id, userId: agnes.id, callId: call.id, createdAt: at(0, 10, 15) },
   });
   await prisma.task.create({
-    data: { title: "Book onboarding call for 3 outlets", type: TaskType.MEETING, dueAt: at(-4, 10), leadId: amaka.id, userId: agnes.id },
+    data: { title: "Book onboarding call for 3 outlets", description: "Book the onboarding call once the proposal is accepted.", type: TaskType.MEETING, dueAt: at(-4, 10), ownerId: agnes.id, leadId: amaka.id, userId: agnes.id },
   });
   await prisma.activity.createMany({
     data: [
@@ -204,7 +205,7 @@ async function main() {
   ];
   for (const [name, title, type, dueAt] of nextActions) {
     const lead = await prisma.lead.findFirstOrThrow({ where: { contact: { name } } });
-    await prisma.task.create({ data: { title, type, dueAt, leadId: lead.id, userId: lead.ownerId } });
+    await prisma.task.create({ data: { title, type, dueAt, ownerId: lead.ownerId, leadId: lead.id, userId: lead.ownerId } });
   }
 
   // Calls: the mock's last 7 days, plus quieter background days for earlier in the month/previous period.
@@ -279,8 +280,8 @@ async function main() {
   // Dashboard tasks that aren't tied to a lead.
   await prisma.task.createMany({
     data: [
-      { title: "Send proposal to Okeke Global", subtitle: "Pricing for 20 seats", type: TaskType.FOLLOW_UP, dueAt: at(1, 15, 0) },
-      { title: "Update lead notes", subtitle: "Log call outcomes", type: TaskType.OTHER, dueAt: at(-1, 16, 0) },
+      { title: "Send proposal to Okeke Global", subtitle: "Pricing for 20 seats", description: "Pricing for 20 seats.", type: TaskType.FOLLOW_UP, dueAt: at(1, 15, 0) },
+      { title: "Update lead notes", subtitle: "Log call outcomes", description: "Log call outcomes.", type: TaskType.OTHER, dueAt: at(-1, 16, 0) },
     ],
   });
 

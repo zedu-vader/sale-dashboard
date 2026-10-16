@@ -207,7 +207,7 @@ export async function getLeadProfile(id: string): Promise<LeadProfile | null> {
       createdBy: { select: { name: true, email: true } },
       tasks: {
         orderBy: [{ done: "asc" }, { dueAt: "asc" }],
-        include: { user: { select: { name: true, email: true } }, call: { select: { calledAt: true } } },
+        include: { owner: { select: { name: true, email: true } }, user: { select: { name: true, email: true } }, call: { select: { calledAt: true } } },
       },
       calls: { orderBy: { calledAt: "desc" }, include: { user: { select: { name: true, email: true } } } },
       notes: { orderBy: { createdAt: "desc" }, include: { author: { select: { name: true, email: true } } } },
@@ -218,7 +218,7 @@ export async function getLeadProfile(id: string): Promise<LeadProfile | null> {
           actor: { select: { name: true, email: true } },
           call: true,
           note: true,
-          task: { include: { user: { select: { name: true, email: true } }, call: { select: { calledAt: true } } } },
+          task: { include: { owner: { select: { name: true, email: true } }, user: { select: { name: true, email: true } }, call: { select: { calledAt: true } } } },
         },
       },
     },
@@ -227,7 +227,9 @@ export async function getLeadProfile(id: string): Promise<LeadProfile | null> {
 
   const ownerName = lead.owner ? userName(lead.owner) : null;
   const toTask = (t: (typeof lead.tasks)[number]): ProfileTask => {
-    const name = t.user ? userName(t.user) : null;
+    // Assignee; older tasks only have the creator-as-owner in userId.
+    const who = t.owner ?? t.user;
+    const name = who ? userName(who) : null;
     return {
       id: t.id,
       title: t.title,

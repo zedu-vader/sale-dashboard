@@ -232,7 +232,7 @@ const callBody = (c: { outcome: CallOutcome; durationSec: number | null; notes: 
 export async function getContactProfile(id: string): Promise<ContactProfile | null> {
   const now = new Date();
   const userSel = { select: { name: true, email: true } } as const;
-  const taskInclude = { user: userSel, call: { select: { calledAt: true } } } as const;
+  const taskInclude = { owner: userSel, user: userSel, call: { select: { calledAt: true } } } as const;
   const contact = await prisma.contact.findUnique({
     where: { id },
     include: {
@@ -270,7 +270,9 @@ export async function getContactProfile(id: string): Promise<ContactProfile | nu
 
   type TaskRowT = (typeof contact.tasks)[number];
   const toTask = (t: TaskRowT): ProfileTask => {
-    const name = t.user ? userName(t.user) : null;
+    // Assignee; older tasks only have the creator-as-owner in userId.
+    const who = t.owner ?? t.user;
+    const name = who ? userName(who) : null;
     return {
       id: t.id,
       title: t.title,

@@ -35,7 +35,7 @@ export const phoneDigits = (phone: string) => phone.replace(/\D/g, "");
 /**
  * Phone digits in +234 form, stored on contacts for search and duplicate checks: a local 11-digit number
  * starting with 0 is rewritten, so 0803 123 4567 and +234 803 123 4567 give the same key.
- * Keep in step with the SQL in prisma/migrations/0006_contacts.
+ * Keep in step with the SQL in prisma/migrations/0007_contacts.
  */
 export function phoneKey(phone: string) {
   const d = phoneDigits(phone);

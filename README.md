@@ -42,7 +42,7 @@ Setting and rotating the key has its own endpoint under `src/app/api/admin/`: `P
 needs no credentials and claims the key; after that it needs the current key or a signed-in admin session. Until a key is
 stored, the optional `MASTER_KEY` env value is also accepted by `bootstrap`; once one is stored the env value stops working.
 
-Set `AUTH_SECRET` (32+ random chars) and the `SMTP_*` variables from `.env.example`. Without `SMTP_HOST`, emails are printed to the server log.
+Set `AUTH_SECRET` (32+ random chars; falls back to `NEXTAUTH_SECRET` if unset) and the `SMTP_*` variables from `.env.example`. Without `SMTP_HOST`, emails are printed to the server log.
 
 ## Pages
 
@@ -69,8 +69,9 @@ A contact is one person or business. Every lead points to a contact and reads it
 and type from it, so editing the contact updates its leads (nothing is copied). Calls, tasks, notes and timeline
 entries link to the contact and, when there is one, the lead. Phone numbers are also stored in +234 form
 (`phoneKey`), so `0803 123 4567` and `+234 803 123 4567` count as the same number for search and duplicates.
-Migration `0006_contacts` gives every existing lead its own contact; the leads' old name/phone/email/company/type
-columns are kept but no longer used.
+Migration `0007_contacts` upgrades the contacts directory table from `0003_contacts` in place: contacts already
+linked to a lead keep that link (now `Lead.contactId`), every other lead gets its own contact, and unlinked
+contacts stay. The leads' old name/phone/email/company/type columns are kept but no longer used.
 
 ## Design system
 

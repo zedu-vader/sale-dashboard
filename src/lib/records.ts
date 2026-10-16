@@ -65,7 +65,7 @@ export async function recordTask(meId: string, target: Target, input: TaskInput)
   if (!input.due || Number.isNaN(dueAt.getTime())) return { ok: false, error: "Pick a due date and time." };
   const type = input.type in TaskType ? (input.type as TaskType) : TaskType.OTHER;
   await prisma.$transaction(async (tx) => {
-    const task = await tx.task.create({ data: { ...target, title: title.slice(0, 200), type, dueAt, userId: input.ownerId || meId } });
+    const task = await tx.task.create({ data: { ...target, title: title.slice(0, 200), type, dueAt, ownerId: input.ownerId || meId, userId: meId } });
     await tx.activity.create({ data: { ...target, actorId: meId, type: ActivityType.TASK_CREATED, taskId: task.id } });
   });
   return { ok: true };
@@ -117,7 +117,8 @@ export async function recordCall(meId: string, target: Target, input: CallInput)
           title: status ? `Follow up: ${STAGES[status].label}` : "Follow up",
           type: TaskType.FOLLOW_UP,
           dueAt: followUp,
-          userId: lead?.ownerId ?? meId,
+          ownerId: lead?.ownerId ?? meId,
+          userId: meId,
           callId: call.id,
         },
       });

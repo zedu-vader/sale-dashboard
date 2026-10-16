@@ -90,7 +90,7 @@ export async function createLead(values: LeadFormValues, opts: { allowDuplicate?
     }
     if (followUp) {
       const task = await tx.task.create({
-        data: { ...target, title: "Follow up", type: TaskType.FOLLOW_UP, dueAt: followUp, userId: owner?.id ?? me.id },
+        data: { ...target, title: "Follow up", type: TaskType.FOLLOW_UP, dueAt: followUp, ownerId: owner?.id ?? me.id, userId: me.id },
       });
       await tx.activity.create({ data: { ...target, actorId: me.id, type: ActivityType.TASK_CREATED, taskId: task.id } });
     }
