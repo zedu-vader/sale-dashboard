@@ -9,14 +9,15 @@ export const REFRESH_TTL_SECONDS = 30 * 24 * 60 * 60;
 export const SETUP_TTL_SECONDS = 30 * 60;
 
 export const PUBLIC_PAGES = ["/login", "/setup", "/request-access"];
-export const PUBLIC_API_PREFIXES = ["/api/auth/", "/api/health"];
+export const PUBLIC_API_PREFIXES = ["/api/auth/", "/api/admin/", "/api/health"];
 
 export type Role = "ADMIN" | "MEMBER";
 
+/** AUTH_SECRET, or NEXTAUTH_SECRET when AUTH_SECRET isn't set (production only has the NextAuth one). */
 export function authSecret(): Uint8Array {
-  const secret = process.env.AUTH_SECRET;
+  const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
   if (!secret || secret.length < 32) {
-    throw new Error("AUTH_SECRET must be set to a random string of at least 32 characters.");
+    throw new Error("AUTH_SECRET (or NEXTAUTH_SECRET) must be set to a random string of at least 32 characters.");
   }
   return new TextEncoder().encode(secret);
 }

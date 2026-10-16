@@ -28,6 +28,7 @@ model User {
   invite        Invite?        @relation("AcceptedVia", fields: [inviteId], references: [id], onDelete: SetNull)
   ownedLeads    Lead[]         @relation("LeadOwner")
   createdLeads  Lead[]         @relation("LeadCreator")
+  ownedTasks    Task[]         @relation("TaskOwner")
   calls         Call[]
   notes         Note[]
   activities    Activity[]
@@ -261,10 +262,13 @@ model Task {
   id          String     @id @default(cuid())
   title       String
   subtitle    String?
+  description String?
   type        TaskType   @default(OTHER)
   dueAt       DateTime
   done        Boolean    @default(false)
   completedAt DateTime?
+  ownerId     String?
+  owner       User?      @relation("TaskOwner", fields: [ownerId], references: [id], onDelete: SetNull)
   userId      String?
   user        User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
   leadId      String?
@@ -313,4 +317,13 @@ model Activity {
   createdAt  DateTime     @default(now())
 
   @@index([leadId, createdAt])
+}
+
+// Single row (id "default"): SHA-hashed bootstrap/admin key, set or rotated via /api/admin/master-key.
+model MasterKey {
+  id          String   @id @default("default")
+  keyHash     String
+  version     Int      @default(1)
+  rotatedAt   DateTime @default(now())
+  rotatedById String?
 }

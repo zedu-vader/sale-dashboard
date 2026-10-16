@@ -28,7 +28,21 @@ Create the first admin by inserting an invite with the `ADMIN` role, then open `
 INSERT INTO "Invite" (token, role) VALUES ('ABCDEFGHJ', 'ADMIN');
 ```
 
-Set `AUTH_SECRET` (32+ random chars) and the `SMTP_*` variables from `.env.example`. Without `SMTP_HOST`, emails are printed to the server log.
+### Master key
+
+A bootstrap/admin key for setup and recovery, sent as `x-master-key: <key>` (or `Authorization: Bearer <key>`):
+
+```bash
+# Create an admin invite (role defaults to ADMIN; optional email, maxUses 1-10), then open /setup with the code
+curl -X POST $APP_URL/api/admin/bootstrap -H "x-master-key: $KEY" -H "Content-Type: application/json" -d '{}'
+```
+
+Setting and rotating the key has its own endpoint under `src/app/api/admin/`: `PUT` with an optional `{"newKey": "..."}`
+(32+ chars; omit it to get a generated key, shown once; only a hash is stored). The first call, while no key is stored,
+needs no credentials and claims the key; after that it needs the current key or a signed-in admin session. Until a key is
+stored, the optional `MASTER_KEY` env value is also accepted by `bootstrap`; once one is stored the env value stops working.
+
+Set `AUTH_SECRET` (32+ random chars; falls back to `NEXTAUTH_SECRET` if unset) and the `SMTP_*` variables from `.env.example`. Without `SMTP_HOST`, emails are printed to the server log.
 
 ## Pages
 

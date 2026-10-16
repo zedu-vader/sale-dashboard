@@ -1,29 +1,35 @@
+import { Suspense } from "react";
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
-import { AppShell } from "@/components/shell/AppShell";
+import { getLeadOptions, getTasks } from "@/lib/tasks";
+import { getTeam } from "@/lib/leads";
+import { getShellCounts } from "@/lib/shell";
 import { TasksBoard } from "@/components/tasks/TasksBoard";
-import { INITIAL_TASKS } from "@/data/tasks";
+import { AppShell } from "@/components/shell/AppShell";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "Tasks" };
+export const metadata: Metadata = { title: "Tasks · Zedu Sales" };
 
 export default async function TasksPage() {
   const session = await getSession();
   if (!session) redirect("/login?next=/tasks");
+  const meId = session.user.id;
 
-  const name = session.user.name ?? session.user.email ?? "there";
-  const open = INITIAL_TASKS.filter((t) => t.status !== "Completed").length;
-  const overdue = INITIAL_TASKS.some((t) => t.dueTone === "overdue" && t.status !== "Completed");
+  const [tasks, team, shell, leads] = await Promise.all([
+    getTasks(),
+    getTeam(meId),
+    getShellCounts(),
+    getLeadOptions(),
+  ]);
+  const name = session.user.name;
 
   return (
-    <AppShell
-      user={{ name, email: session.user.email, image: session.user.image }}
-      openTaskCount={open}
-      unread={overdue}
-      active="Tasks"
-    >
-      <TasksBoard />
+    <AppShell user={{ name, email: session.user.email, image: session.user.image }} {...shell} active="Tasks">
+      <Suspense>
+        <TasksBoard initial={tasks} userId={meId} userName={name} leads={leads} team={team} />
+      </Suspense>
     </AppShell>
   );
 }
