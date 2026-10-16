@@ -42,7 +42,7 @@ Setting and rotating the key has its own endpoint under `src/app/api/admin/`: `P
 needs no credentials and claims the key; after that it needs the current key or a signed-in admin session. Until a key is
 stored, the optional `MASTER_KEY` env value is also accepted by `bootstrap`; once one is stored the env value stops working.
 
-Set `AUTH_SECRET` (32+ random chars) and the `SMTP_*` variables from `.env.example`. Without `SMTP_HOST`, emails are printed to the server log.
+Set `AUTH_SECRET` (32+ random chars; falls back to `NEXTAUTH_SECRET` if unset) and the `SMTP_*` variables from `.env.example`. Without `SMTP_HOST`, emails are printed to the server log.
 
 ## Pages
 
