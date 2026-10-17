@@ -20,7 +20,7 @@ import {
 
 import { fetchContacts } from "./api";
 import { ContactDialog } from "./ContactDialog";
-import ContactImport from "@/components/ContactImport";
+import ContactImport from "./ContactImport";
 
 import {
   TYPE_LABEL,
@@ -115,7 +115,7 @@ export function ContactsPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button onClick={() => setImporting(true)}>
+          <Button variant="secondary" onClick={() => setImporting(true)}>
             Import CSV
           </Button>
 
@@ -315,7 +315,6 @@ export function ContactsPage() {
           onClose={() => setImporting(false)}
           onImported={() => {
             void refreshContacts();
-            setImporting(false);
           }}
         />
       )}

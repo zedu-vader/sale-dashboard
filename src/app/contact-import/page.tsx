@@ -1,20 +1,13 @@
-"use client";
+import { ContactsShell } from "@/components/contacts";
+import { ContactImportScreen } from "@/components/contacts/ContactImportScreen";
 
-import { useRouter } from "next/navigation";
-import ContactImport from "@/components/ContactImport";
+export const metadata = { title: "Import contacts" };
+export const dynamic = "force-dynamic";
 
 export default function ContactImportPage() {
-  const router = useRouter();
-
-  function refreshContacts() {
-    router.push("/contacts");
-    router.refresh();
-  }
-
   return (
-    <ContactImport
-      onClose={() => router.push("/contacts")}
-      onImported={refreshContacts}
-    />
+    <ContactsShell>
+      <ContactImportScreen />
+    </ContactsShell>
   );
 }
