@@ -36,7 +36,7 @@ export default async function ContactPage({ params, searchParams }: Props) {
   const lead = searchParams.lead === "new" || searchParams.lead === "link" ? searchParams.lead : null;
 
   return (
-    <AppShell user={{ name, email: session.user.email, image: session.user.image }} {...shell}>
+    <AppShell user={{ name, email: session.user.email, image: session.user.image, role: session.user.role }} {...shell}>
       <ContactProfileView
         contact={contact}
         team={team}

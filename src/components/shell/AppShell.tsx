@@ -24,7 +24,7 @@ import {
   WorkspaceSwitcher,
 } from "@/components/zedu";
 
-type User = { name: string; email?: string | null; image?: string | null };
+type User = { name: string; email?: string | null; image?: string | null; role?: "ADMIN" | "MEMBER" };
 
 type Props = {
   user: User;
@@ -108,7 +108,27 @@ export function AppShell({ user, openTaskCount, unread, active, children }: Prop
               <UserTrigger name={user.name} email={user.email} initials={initials} image={user.image} collapsed={rail} {...p} />
             )}
           >
-            <UserMenu name={user.name} subtitle={user.email ?? undefined} onLogOut={() => signOut()} />
+            <UserMenu
+              name={user.name}
+              subtitle={user.email ? `${user.email}${user.role ? ` · ${user.role === "ADMIN" ? "Admin" : "Member"}` : ""}` : undefined}
+              onProfile={() => {
+                onNavigate?.();
+                router.push("/settings?tab=profile");
+              }}
+              onSettings={() => {
+                onNavigate?.();
+                router.push("/settings");
+              }}
+              onTeam={
+                user.role === "ADMIN"
+                  ? () => {
+                      onNavigate?.();
+                      router.push("/settings?tab=team");
+                    }
+                  : undefined
+              }
+              onLogOut={() => signOut()}
+            />
           </Dropdown>
         </>
       }
