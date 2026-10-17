@@ -154,9 +154,11 @@ export function CallsPage({ leads, callers, callerName, previewMode = false, pre
 }
 
 function LeadLink({ call, previewMode = false, onPreviewLead }: { call: CallRecord; previewMode?: boolean; onPreviewLead?: () => void }) {
-  if (!call.lead) return <span className="text-[12px] text-[#71717c]">Lead unavailable</span>;
-  if (previewMode) return <button type="button" onClick={onPreviewLead} className="block max-w-full truncate text-left text-[13px] font-medium text-[#18181c] underline decoration-transparent underline-offset-2 hover:decoration-current">{call.lead.name}<span className="ml-1.5 text-[11px] font-normal text-[#71717c]">{call.lead.phone}</span></button>;
-  return <Link href={`/leads/${encodeURIComponent(call.lead.id)}`} className="block truncate text-[13px] font-medium text-[#18181c] underline decoration-transparent underline-offset-2 hover:decoration-current">{call.lead.name}<span className="ml-1.5 text-[11px] font-normal text-[#71717c]">{call.lead.phone}</span></Link>;
+  const record = call.lead ?? call.contact;
+  if (!record) return <span className="text-[12px] text-[#71717c]">Contact unavailable</span>;
+  if (previewMode) return <button type="button" onClick={onPreviewLead} className="block max-w-full truncate text-left text-[13px] font-medium text-[#18181c] underline decoration-transparent underline-offset-2 hover:decoration-current">{record.name}<span className="ml-1.5 text-[11px] font-normal text-[#71717c]">{record.phone}</span></button>;
+  const href = call.lead ? `/leads/${encodeURIComponent(call.lead.id)}` : `/contacts/${encodeURIComponent(record.id)}`;
+  return <Link href={href} className="block truncate text-[13px] font-medium text-[#18181c] underline decoration-transparent underline-offset-2 hover:decoration-current">{record.name}<span className="ml-1.5 text-[11px] font-normal text-[#71717c]">{record.phone}</span></Link>;
 }
 
 function Status({ value }: { value: ConnectionStatus }) {

@@ -1,33 +1,17 @@
-import { getServerSession } from "next-auth";
-import type { Session } from "next-auth";
+import { ActivityType, TaskType } from "@prisma/client";
 import { NextResponse } from "next/server";
-import { authOptions } from "@/lib/auth";
+import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
-const unavailable = () => NextResponse.json(
-  { error: "The follow-up task could not be saved because the database is temporarily unavailable. Please try again." },
-  { status: 503 },
-);
-
-const taskTypes = ["Call", "Email", "Note"] as const;
+const unavailable = () => NextResponse.json({ error: "The follow-up task could not be saved. Please try again." }, { status: 503 });
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
-  let session: Session | null;
-  try {
-    session = await getServerSession(authOptions);
-  } catch {
-    return unavailable();
-  }
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const user = session.user as typeof session.user & { id?: string };
-  if (!user.id) return NextResponse.json({ error: "Authenticated user ID is unavailable" }, { status: 401 });
-
+  let auth;
+  try { auth = await requireUser(); } catch { return unavailable(); }
+  if (auth instanceof NextResponse) return auth;
   const body = await req.json().catch(() => null);
-  if (!body || typeof body !== "object" || Array.isArray(body)) {
-    return NextResponse.json({ error: "A JSON object is required" }, { status: 400 });
-  }
+  if (!body || typeof body !== "object" || Array.isArray(body)) return NextResponse.json({ error: "A JSON object is required" }, { status: 400 });
   const title = typeof body.title === "string" ? body.title.trim() : "";
   const notes = body.notes === undefined ? "" : body.notes;
   const dueAt = typeof body.dueAt === "string" ? new Date(body.dueAt) : null;
@@ -36,39 +20,28 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   if (typeof notes !== "string") return NextResponse.json({ error: "Description must be a string" }, { status: 400 });
   if (notes.length > 500) return NextResponse.json({ error: "Description must be 500 characters or fewer" }, { status: 400 });
   if (!dueAt || Number.isNaN(dueAt.getTime())) return NextResponse.json({ error: "A valid due date is required" }, { status: 400 });
-  if (typeof body.type !== "string" || !(taskTypes as readonly string[]).includes(body.type)) {
-    return NextResponse.json({ error: "Invalid task type" }, { status: 400 });
-  }
+  const types: Record<string, TaskType> = { Call: TaskType.CALL, Email: TaskType.EMAIL, Note: TaskType.OTHER };
+  if (typeof body.type !== "string" || !types[body.type]) return NextResponse.json({ error: "Invalid task type" }, { status: 400 });
 
   try {
     const task = await prisma.$transaction(async (tx) => {
-      const call = await tx.call.findUnique({
-        where: { id: params.id },
-        select: { id: true, leadId: true, lead: { select: { id: true, name: true } } },
-      });
+      const call = await tx.call.findUnique({ where: { id: params.id }, select: { id: true, leadId: true, contactId: true } });
       if (!call) return null;
-      if (!call.lead) throw new Error("This call has no associated lead");
-      return tx.task.create({
+      if (!call.leadId || !call.contactId) return { noLead: true as const };
+      const lead = await tx.lead.findUnique({ where: { id: call.leadId }, select: { id: true, contactId: true, ownerId: true } });
+      if (!lead || lead.contactId !== call.contactId) return { noLead: true as const };
+      const created = await tx.task.create({
         data: {
-          title,
-          subtitle: notes.trim() || null,
-          dueAt,
-          type: body.type === "Email" ? "EMAIL" : body.type === "Note" ? "NOTE" : "CALL",
-          ownerName: user.name?.trim() || user.email || "You",
-          userId: user.id,
-          leadId: call.lead.id,
-          leadName: call.lead.name,
-          callId: call.id,
+          title, description: notes.trim() || null, subtitle: notes.trim() || null, dueAt,
+          type: types[body.type], done: false, ownerId: auth.user.id,
+          userId: auth.user.id, leadId: lead.id, contactId: lead.contactId, callId: call.id,
         },
-        include: { lead: { select: { id: true, name: true } } },
       });
+      await tx.activity.create({ data: { leadId: lead.id, contactId: lead.contactId, actorId: auth.user.id, type: ActivityType.TASK_CREATED, taskId: created.id } });
+      return created;
     });
     if (!task) return NextResponse.json({ error: "Call not found" }, { status: 404 });
+    if ("noLead" in task) return NextResponse.json({ error: "This call has no associated lead" }, { status: 409 });
     return NextResponse.json(task, { status: 201 });
-  } catch (error) {
-    if (error instanceof Error && error.message === "This call has no associated lead") {
-      return NextResponse.json({ error: error.message }, { status: 409 });
-    }
-    return unavailable();
-  }
+  } catch { return unavailable(); }
 }

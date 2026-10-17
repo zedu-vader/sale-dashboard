@@ -1,42 +1,30 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { getSession } from "@/lib/auth";
 import { getDashboardData } from "@/lib/dashboard";
 import { parseRange } from "@/lib/range";
-import { SignInButton } from "@/components/AuthButtons";
+import { getShellCounts } from "@/lib/shell";
 import { Dashboard } from "@/components/dashboard/Dashboard";
-import { DashboardShell } from "@/components/dashboard/DashboardShell";
-import { Card, Logo } from "@/components/zedu";
+import { AppShell } from "@/components/shell/AppShell";
 
 export const dynamic = "force-dynamic";
 
 type Props = { searchParams: { range?: string | string[] } };
 
 export default async function Home({ searchParams }: Props) {
-  const session = await getServerSession(authOptions);
+  const session = await getSession();
+  if (!session) redirect("/login");
 
-  if (!session?.user) {
-    return (
-      <main className="zedu grid min-h-screen place-items-center bg-z-app px-4 py-6">
-        <Card className="w-full max-w-[400px] items-start !gap-3 !p-8 max-sm:!p-6">
-          <Logo />
-          <h1 className="mt-4 text-z-page text-z-fg">Sale dashboard</h1>
-          <p className="mb-2 text-z-small text-z-fg-muted">Sign in to see your calls, leads and follow-ups.</p>
-          <SignInButton />
-        </Card>
-      </main>
-    );
-  }
-
-  const data = await getDashboardData(parseRange(searchParams.range));
-  const name = session.user.name ?? session.user.email ?? "there";
+  const [data, shell] = await Promise.all([getDashboardData(parseRange(searchParams.range)), getShellCounts()]);
+  const name = session.user.name;
 
   return (
-    <DashboardShell
-      user={{ name, email: session.user.email, image: session.user.image }}
+    <AppShell
+      user={{ name, email: session.user.email, image: session.user.image, role: session.user.role }}
       openTaskCount={data.openTaskCount}
       unread={data.overdueCount > 0}
+      accessRequestCount={shell.accessRequestCount}
     >
       <Dashboard data={data} firstName={name.split(/\s+/)[0]} />
-    </DashboardShell>
+    </AppShell>
   );
 }

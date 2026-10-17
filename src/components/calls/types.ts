@@ -18,6 +18,7 @@ export interface CallRecord {
   nextAction: string | null;
   followUpAt: string | null;
   lead: { id: string; name: string; phone: string } | null;
+  contact?: { id: string; name: string; phone: string } | null;
   caller: { id: string; name: string | null; email: string | null } | null;
   tasks: { id: string; title: string; dueAt: string; done: boolean }[];
 }

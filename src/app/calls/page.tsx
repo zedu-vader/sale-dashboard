@@ -1,43 +1,37 @@
-import { getServerSession } from "next-auth";
-import { SignInButton } from "@/components/AuthButtons";
+import { redirect } from "next/navigation";
 import { CallsPage } from "@/components/calls/CallsPage";
-import { DashboardShell } from "@/components/dashboard/DashboardShell";
+import { AppShell } from "@/components/shell/AppShell";
 import { Card, Logo } from "@/components/zedu";
-import { authOptions } from "@/lib/auth";
-import { getDashboardData } from "@/lib/dashboard";
-import { parseRange } from "@/lib/range";
+import { getSession } from "@/lib/auth";
+import { getShellCounts } from "@/lib/shell";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Calls" };
+export const metadata = { title: "Calls · Zedu Sales" };
 
-type Props = { searchParams: { log?: string | string[]; leadId?: string | string[]; range?: string | string[] } };
+type Props = { searchParams: { log?: string | string[]; leadId?: string | string[] } };
 
 export default async function CallsRoute({ searchParams }: Props) {
   let session;
+  try { session = await getSession(); } catch { return <Unavailable />; }
+  if (!session) redirect("/login?next=/calls");
   try {
-    session = await getServerSession(authOptions);
-  } catch {
-    return <Unavailable />;
-  }
-  if (!session?.user) {
-    return <main className="zedu grid min-h-screen place-items-center bg-z-app px-4 py-6"><Card className="w-full max-w-[400px] items-start !gap-3 !p-8"><Logo /><h1 className="mt-4 text-z-page text-z-fg">Calls</h1><p className="mb-2 text-z-small text-z-fg-muted">Sign in to view and log calls.</p><SignInButton /></Card></main>;
-  }
-
-  const name = session.user.name ?? session.user.email ?? "there";
-  const range = parseRange(searchParams.range);
-  try {
-    const [dashboard, leads, callers] = await Promise.all([
-      getDashboardData(range),
-      prisma.lead.findMany({ select: { id: true, name: true, phone: true }, orderBy: { name: "asc" } }),
+    const [shell, leads, callers] = await Promise.all([
+      getShellCounts(),
+      prisma.lead.findMany({ select: { id: true, contact: { select: { name: true, phone: true } } }, orderBy: { contact: { name: "asc" } } }),
       prisma.user.findMany({ where: { calls: { some: {} } }, select: { id: true, name: true, email: true }, orderBy: { name: "asc" } }),
     ]);
-    return <DashboardShell user={{ name, email: session.user.email, image: session.user.image }} openTaskCount={dashboard.openTaskCount} unread={dashboard.overdueCount > 0} active="Calls">
-      <div className="zedu px-6 pb-6 pt-4 max-sm:px-4"><CallsPage leads={leads} callers={callers.map((caller) => ({ id: caller.id, name: caller.name?.trim() || caller.email || "Unknown caller" }))} callerName={name} /></div>
-    </DashboardShell>;
-  } catch {
-    return <Unavailable />;
-  }
+    const name = session.user.name || session.user.email;
+    return <AppShell user={{ name, email: session.user.email, image: session.user.image, role: session.user.role }} {...shell} active="Calls">
+      <div className="zedu px-6 pb-6 pt-4 max-sm:px-4">
+        <CallsPage
+          leads={leads.map((lead) => ({ id: lead.id, name: lead.contact.name, phone: lead.contact.phone }))}
+          callers={callers.map((caller) => ({ id: caller.id, name: caller.name?.trim() || caller.email || "Unknown caller" }))}
+          callerName={name}
+        />
+      </div>
+    </AppShell>;
+  } catch { return <Unavailable />; }
 }
 
 function Unavailable() {

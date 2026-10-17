@@ -2,11 +2,17 @@
 
 import { Ellipsis, Link2, PhoneCall } from "lucide-react";
 import { Avatar, Checkbox, Dropdown, IconButton, Menu, MenuItem } from "@/components/zedu";
+import { DueLabel, TaskStatus, TaskTypeTag, type Due, type TaskKind } from "@/components/zedu/Records";
 import { cx } from "@/components/zedu/cx";
-import type { TaskItem } from "@/data/tasks";
-import { DueLabel } from "./DueLabel";
-import { TaskStatusPill } from "./TaskStatusPill";
-import { TaskTypeTag } from "./TaskTypeTag";
+import type { TaskItem, TaskType } from "@/data/tasks";
+
+const KIND: Record<TaskType, TaskKind> = {
+  Call: "call",
+  Email: "email",
+  "Follow-up": "follow-up",
+  Meeting: "meeting",
+  Other: "other",
+};
 
 type Props = {
   task: TaskItem;
@@ -14,14 +20,14 @@ type Props = {
   onOpen: () => void;
   onFollowUp: () => void;
   onDelete: () => void;
-  readOnly?: boolean;
 };
 
-/** Task row (Figma 3:3278): 60px desktop row, compact card under 768px (Figma 7:4317). */
-export function TaskRowItem({ task, onToggle, onOpen, onFollowUp, onDelete, readOnly = false }: Props) {
+/** Task row: 60px desktop row, compact card below lg (Figma mobile frame 7:4317). */
+export function TaskRowItem({ task, onToggle, onOpen, onFollowUp, onDelete }: Props) {
   const done = task.status === "Completed";
+  const due: Due = task.dueTone;
   return (
-    <div className="group flex items-center gap-3 border-b border-z-line bg-z-surface py-0 pl-3 pr-2 transition-colors duration-150 last:border-b-0 hover:bg-z-subtle max-md:items-start max-md:px-4 max-md:py-3 md:h-[60px]">
+    <div className="group flex items-center gap-3 border-b border-z-line bg-z-surface py-0 pl-3 pr-2 transition-colors duration-150 last:border-b-0 hover:bg-z-subtle max-lg:items-start max-lg:px-4 max-lg:py-3 lg:h-[60px]">
       <Checkbox
         label={task.title}
         hideLabel
@@ -33,20 +39,14 @@ export function TaskRowItem({ task, onToggle, onOpen, onFollowUp, onDelete, read
       <button
         type="button"
         onClick={onOpen}
-        disabled={readOnly}
         className="z-focus flex min-w-0 flex-1 flex-col items-start gap-0.5 overflow-hidden rounded-z-xs py-1 text-left"
       >
-        <span
-          className={cx(
-            "w-full truncate text-z-small font-medium",
-            done ? "text-z-fg-muted" : "text-z-fg",
-          )}
-        >
+        <span className={cx("w-full truncate text-z-small font-medium", done ? "text-z-fg-muted" : "text-z-fg")}>
           {task.title}
         </span>
         {/* Desktop meta: type + record + from-call */}
-        <span className="flex w-full items-center gap-2 overflow-hidden max-md:hidden">
-          <TaskTypeTag type={task.type} />
+        <span className="flex w-full items-center gap-2 overflow-hidden max-lg:hidden">
+          <TaskTypeTag type={KIND[task.type]} />
           <span className="flex min-w-0 items-center gap-1 text-z-caption font-medium text-z-fg-secondary">
             <Link2 aria-hidden className="size-3 shrink-0 text-z-icon" />
             <span className="truncate">{task.recordName}</span>
@@ -60,28 +60,22 @@ export function TaskRowItem({ task, onToggle, onOpen, onFollowUp, onDelete, read
           )}
         </span>
         {/* Mobile meta: due · person */}
-        <span className="flex w-full items-center gap-2 overflow-hidden md:hidden">
-          <DueLabel tone={task.dueTone} text={mobileDue(task)} />
+        <span className="flex w-full items-center gap-2 overflow-hidden lg:hidden">
+          <DueLabel due={due}>{mobileDue(task)}</DueLabel>
           <span className="truncate text-z-caption font-normal text-z-fg-muted">· {task.owner.name}</span>
         </span>
       </button>
-      <span className="hidden w-[180px] shrink-0 items-center overflow-hidden md:flex">
-        <DueLabel tone={task.dueTone} text={task.dueText} />
+      <span className="hidden w-[180px] shrink-0 items-center overflow-hidden lg:flex">
+        <DueLabel due={due}>{task.dueText}</DueLabel>
       </span>
-      <span className="hidden w-[160px] shrink-0 items-center gap-2 overflow-hidden md:flex">
-        {task.owner.key === "unassigned" ? (
-          <span aria-hidden className="grid size-6 shrink-0 place-items-center rounded-full bg-z-sunken text-z-caption text-z-fg-muted">
-            –
-          </span>
-        ) : (
-          <Avatar size={24} initials={task.owner.initials} />
-        )}
+      <span className="hidden w-[160px] shrink-0 items-center gap-2 overflow-hidden lg:flex">
+        <Avatar size={24} initials={task.owner.initials} />
         <span className="truncate text-z-small font-normal text-z-fg-secondary">{task.owner.name}</span>
       </span>
-      <span className="hidden w-[96px] shrink-0 items-center overflow-hidden md:flex">
-        <TaskStatusPill status={task.status} />
+      <span className="hidden w-[96px] shrink-0 items-center overflow-hidden lg:flex">
+        <TaskStatus status={done ? "completed" : "pending"} />
       </span>
-      {!readOnly && <span className="shrink-0 max-md:hidden">
+      <span className="shrink-0 max-lg:hidden">
         <Dropdown
           align="end"
           trigger={(props) => (
@@ -98,9 +92,9 @@ export function TaskRowItem({ task, onToggle, onOpen, onFollowUp, onDelete, read
             </MenuItem>
           </Menu>
         </Dropdown>
-      </span>}
-      <span className="shrink-0 md:hidden">
-        <TaskTypeTag type={task.type} />
+      </span>
+      <span className="shrink-0 lg:hidden">
+        <TaskTypeTag type={KIND[task.type]} />
       </span>
     </div>
   );

@@ -143,7 +143,7 @@ export function CallTaskDialog({ call, open, previewMode = false, onClose, onSav
     } catch (err) { setError(err instanceof Error ? err.message : "Could not create the follow-up task."); }
     finally { setSaving(false); }
   }
-  return <LocalDialog open={open} onClose={onClose} title="Create follow-up task" subtitle={call ? `From your call with ${call.lead?.name ?? "this lead"}` : undefined} footer={<><button type="button" className={secondary} onClick={onClose}>Cancel</button><button type="submit" form="call-task-form" disabled={saving || previewMode} className={primary}>{previewMode ? "Preview only" : saving ? "Saving…" : "Create task"}</button></>}>
+  return <LocalDialog open={open} onClose={onClose} title="Create follow-up task" subtitle={call ? `From your call with ${call.lead?.name ?? call.contact?.name ?? "this lead"}` : undefined} footer={<><button type="button" className={secondary} onClick={onClose}>Cancel</button><button type="submit" form="call-task-form" disabled={saving || previewMode || !call?.leadId} className={primary}>{previewMode ? "Preview only" : saving ? "Saving…" : "Create task"}</button></>}>
     {call && <form id="call-task-form" onSubmit={submit} className="flex flex-col gap-4">
       {previewMode && <p className="m-0 rounded-md bg-[#fff8e6] px-3 py-2 text-[12px] text-[#704d00]">Preview mode — this task will not be saved.</p>}
       <div className="rounded-md bg-[#f0efff] px-3 py-2.5 text-[12px] leading-[18px] text-[#5048e5]">Linked to <strong>{call.lead?.name ?? "lead"}</strong>{call.lead?.name && call.lead?.phone ? ` · ${call.lead.phone}` : ""} and to the call on {formatCallDate(call.calledAt)}. This task will stay linked to the call and lead.</div>
@@ -158,9 +158,9 @@ export function CallTaskDialog({ call, open, previewMode = false, onClose, onSav
 }
 
 export function CallDetailsDialog({ call, onClose, onCreateTask }: { call: CallRecord | null; onClose: () => void; onCreateTask: (call: CallRecord) => void }) {
-  return <LocalDialog open={Boolean(call)} onClose={onClose} title="Call details" subtitle={call ? formatCallDate(call.calledAt) : undefined} footer={call ? <><button type="button" className={secondary} onClick={onClose}>Close</button><button type="button" className={primary} onClick={() => onCreateTask(call)}>Create follow-up task</button></> : undefined}>
+  return <LocalDialog open={Boolean(call)} onClose={onClose} title="Call details" subtitle={call ? formatCallDate(call.calledAt) : undefined} footer={call ? <><button type="button" className={secondary} onClick={onClose}>Close</button>{call.leadId && <button type="button" className={primary} onClick={() => onCreateTask(call)}>Create follow-up task</button>}</> : undefined}>
     {call && <dl className="grid grid-cols-1 gap-4 text-[13px] sm:grid-cols-2">
-      <Detail label="Lead" value={call.lead?.name ?? "Lead unavailable"} /><Detail label="Caller" value={call.caller?.name ?? call.callerName ?? "Unknown"} />
+      <Detail label={call.lead ? "Lead" : "Contact"} value={call.lead?.name ?? call.contact?.name ?? "Record unavailable"} /><Detail label="Caller" value={call.caller?.name ?? call.callerName ?? "Unknown"} />
       <Detail label="Connection" value={call.connectionStatus === "CONNECTED" ? "Connected" : "Not connected"} /><Detail label="Outcome" value={callOutcomeLabel(call)} />
       <Detail label="Duration" value={call.durationSeconds === null ? "Not recorded" : `${call.durationSeconds} seconds`} /><Detail label="Follow-up date" value={call.followUpAt ? formatCallDate(call.followUpAt) : "—"} />
       <div className="sm:col-span-2"><Detail label="Next action" value={call.nextAction ?? "—"} /></div>

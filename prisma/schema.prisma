@@ -16,7 +16,83 @@ model User {
   accounts      Account[]
   sessions      Session[]
   tasks         Task[]
-  calls         Call[]    @relation("CallCaller")
+
+  // Invite-only auth (JWT + refresh tokens). Google sign-in (NextAuth) is only allowed for existing users.
+  passwordHash    String?
+  role            Role           @default(MEMBER)
+  createdAt       DateTime       @default(now())
+  disabledAt      DateTime?
+  refreshTokens   RefreshToken[]
+  invitesSent     Invite[]       @relation("InvitedBy")
+  inviteId        String?
+  invite          Invite?        @relation("AcceptedVia", fields: [inviteId], references: [id], onDelete: SetNull)
+  ownedLeads      Lead[]         @relation("LeadOwner")
+  createdLeads    Lead[]         @relation("LeadCreator")
+  createdContacts Contact[]      @relation("ContactCreator")
+  ownedTasks      Task[]         @relation("TaskOwner")
+  calls           Call[]
+  notes           Note[]
+  activities      Activity[]
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+}
+
+// 9-character setup token, valid for `maxUses` sign-ups (1 for emailed invites). Rows can be inserted by hand, so id and expiresAt have DB-level defaults.
+model Invite {
+  id          String    @id @default(dbgenerated("gen_random_uuid()::text"))
+  token       String    @unique
+  email       String?
+  role        Role      @default(MEMBER)
+  expiresAt   DateTime  @default(dbgenerated("(now() + interval '7 days')"))
+  usedAt      DateTime?
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  invitedById String?
+  invitedBy   User?     @relation("InvitedBy", fields: [invitedById], references: [id], onDelete: SetNull)
+  maxUses     Int       @default(1)
+  uses        Int       @default(0)
+  members     User[]    @relation("AcceptedVia")
+
+  @@index([email])
+  @@index([createdAt])
+}
+
+// Only the SHA-256 of the opaque refresh token is stored. Rotated on every use; reuse revokes the whole family.
+model RefreshToken {
+  id           String    @id @default(cuid())
+  tokenHash    String    @unique
+  familyId     String
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  replacedById String?
+  userAgent    String?
+  createdAt    DateTime  @default(now())
+
+  @@index([userId])
+  @@index([familyId])
+}
+
+enum AccessRequestStatus {
+  PENDING
+  INVITED
+  DISMISSED
+}
+
+model AccessRequest {
+  id        String              @id @default(cuid())
+  name      String
+  email     String
+  message   String?
+  status    AccessRequestStatus @default(PENDING)
+  createdAt DateTime            @default(now())
+  handledAt DateTime?
+
+  @@index([status, createdAt])
 }
 
 model Account {
@@ -79,6 +155,11 @@ enum LostReason {
   OTHER
 }
 
+enum LeadSource {
+  MANUAL
+  IMPORT
+}
+
 enum LegacyCallOutcome {
   CONNECTED
   NO_ANSWER
@@ -107,67 +188,219 @@ enum CallOutcome {
 enum TaskType {
   CALL
   EMAIL
-  NOTE
+  FOLLOW_UP
+  MEETING
+  OTHER
+}
+
+enum ActivityType {
+  CREATED
+  STATUS_CHANGED
+  OWNER_CHANGED
+  DETAILS_UPDATED
+  CALL_LOGGED
+  NOTE_ADDED
+  TASK_CREATED
+  CONTACT_CREATED
+  CONTACT_UPDATED
+  CONTACTS_MERGED
+  LEAD_LINKED
+}
+
+/// One person or business the team talks to. Leads, calls, tasks and notes link here; a lead's name,
+/// phone, email, company and type are read from its contact (nothing is copied).
+model Contact {
+  id                String     @id @default(cuid())
+  /// Human-readable ID, shown as CT-####.
+  code              Int        @unique @default(autoincrement())
+  name              String
+  phone             String
+  /// Phone digits in +234 form (0803… and +234 803… give the same key), for search and duplicate checks.
+  phoneKey          String
+  email             String?
+  company           String?
+  type              LeadType
+  /// Free-text notes on the record itself (shown in Details), separate from the Notes timeline.
+  notes             String?
+  source            LeadSource @default(MANUAL)
+  createdById       String?
+  createdBy         User?      @relation("ContactCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  /// Latest call with this contact; denormalised for sorting.
+  lastInteractionAt DateTime?
+  /// Set when this record was merged into another; links to it open the survivor.
+  mergedIntoId      String?
+  mergedInto        Contact?   @relation("ContactMerge", fields: [mergedIntoId], references: [id], onDelete: SetNull)
+  mergedFrom        Contact[]  @relation("ContactMerge")
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @default(now()) @updatedAt
+  leads             Lead[]
+  calls             Call[]
+  tasks             Task[]
+  noteEntries       Note[]
+  activities        Activity[]
+
+  @@index([phoneKey])
+  @@index([email])
+  @@index([name])
+  @@index([createdAt])
+  @@index([mergedIntoId])
+}
+
+/// A pair someone marked "Not a duplicate" in the duplicates review. Stored with aId < bId.
+model DuplicateDismissal {
+  aId         String
+  bId         String
+  dismissedAt DateTime @default(now())
+  dismissedBy String?
+
+  @@id([aId, bId])
 }
 
 model Lead {
-  id           String     @id @default(cuid())
-  name         String
-  phone        String
-  type         LeadType
-  status       LeadStatus
-  lostReason   LostReason?
-  ownerName    String
-  nextAction   String?
-  nextActionAt DateTime?
-  createdAt    DateTime   @default(now())
-  calls        Call[]
-  tasks        Task[]
+  id                String      @id @default(cuid())
+  /// Human-readable ID, shown as LD-####. Starts at 1001.
+  code              Int         @unique @default(autoincrement())
+  contactId         String
+  contact           Contact     @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  /// Legacy identity columns from before contacts existed. Read the contact instead; kept only so old
+  /// data stays recoverable until a later migration drops them.
+  legacyName        String?     @map("name")
+  legacyPhone       String?     @map("phone")
+  legacyEmail       String?     @map("email")
+  legacyCompany     String?     @map("company")
+  legacyType        LeadType?   @map("type")
+  status            LeadStatus
+  lostReason        LostReason?
+  source            LeadSource  @default(MANUAL)
+  ownerId           String?
+  owner             User?       @relation("LeadOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  createdById       String?
+  createdBy         User?       @relation("LeadCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  /// Legacy free-text owner from before owners were team members. Read-only fallback for display.
+  ownerName         String      @default("")
+  /// Legacy next action, superseded by open tasks linked to the lead. Kept for old rows.
+  nextAction        String?
+  nextActionAt      DateTime?
+  /// Latest call (or other logged interaction); denormalised so the list can sort by it.
+  lastInteractionAt DateTime?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @default(now()) @updatedAt
+  calls             Call[]
+  tasks             Task[]
+  notes             Note[]
+  activities        Activity[]
 
   @@index([createdAt])
+  @@index([ownerId])
+  @@index([status])
+  @@index([lastInteractionAt])
+  @@index([contactId])
 }
 
 model Call {
   id               String               @id @default(cuid())
   leadId           String?
-  callerId         String?
-  callerName       String?
+  contactId        String?
   calledAt         DateTime             @default(now())
-  durationSeconds  Int?
+  durationSeconds  Int?                 @map("durationSec")
   connectionStatus CallConnectionStatus @default(CONNECTED)
   outcome          CallOutcome          @default(OTHER) @map("callOutcome")
   legacyOutcome    LegacyCallOutcome?   @map("outcome")
+  callerName       String?
   notes            String?
   nextAction       String?
   followUpAt       DateTime?
+  userId           String?
   lead             Lead?                @relation(fields: [leadId], references: [id], onDelete: SetNull)
-  caller           User?                @relation("CallCaller", fields: [callerId], references: [id], onDelete: SetNull)
+  contact          Contact?             @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  user             User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
   tasks            Task[]
+  activities       Activity[]
 
   @@index([calledAt])
   @@index([leadId])
-  @@index([callerId])
+  @@index([contactId])
+  @@index([userId])
   @@index([connectionStatus, calledAt])
   @@index([outcome, calledAt])
 }
 
 model Task {
-  id       String   @id @default(cuid())
-  title    String
-  subtitle String?
-  dueAt    DateTime
-  done     Boolean  @default(false)
-  userId   String?
-  type     TaskType?
-  ownerName String @default("You")
-  leadName String?
-  leadId   String?
-  callId   String?
-  user     User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  lead     Lead?    @relation(fields: [leadId], references: [id], onDelete: SetNull)
-  call     Call?    @relation(fields: [callId], references: [id], onDelete: SetNull)
+  id          String     @id @default(cuid())
+  title       String
+  subtitle    String?
+  description String?
+  type        TaskType   @default(OTHER)
+  dueAt       DateTime
+  done        Boolean    @default(false)
+  completedAt DateTime?
+  ownerId     String?
+  owner       User?      @relation("TaskOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  userId      String?
+  user        User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  leadId      String?
+  lead        Lead?      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  contactId   String?
+  contact     Contact?   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  /// The call this task was created from ("From call · Oct 14").
+  callId      String?
+  call        Call?      @relation(fields: [callId], references: [id], onDelete: SetNull)
+  createdAt   DateTime   @default(now())
+  activities  Activity[]
 
   @@index([dueAt])
   @@index([leadId])
+  @@index([contactId])
   @@index([callId])
+}
+
+model Note {
+  id         String     @id @default(cuid())
+  leadId     String?
+  lead       Lead?      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  contactId  String?
+  contact    Contact?   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  authorId   String?
+  author     User?      @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  body       String
+  createdAt  DateTime   @default(now())
+  activities Activity[]
+
+  @@index([leadId, createdAt])
+  @@index([contactId, createdAt])
+}
+
+/// Timeline entry for a lead and/or its contact. The optional links point at the call, note or task the entry is about.
+model Activity {
+  id         String       @id @default(cuid())
+  leadId     String?
+  lead       Lead?        @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  contactId  String?
+  contact    Contact?     @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  actorId    String?
+  actor      User?        @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  type       ActivityType
+  fromStatus LeadStatus?
+  toStatus   LeadStatus?
+  /// Free text for CREATED ("Added manually · Owner: Agnes Okafor"), OWNER_CHANGED and merges.
+  detail     String?
+  callId     String?
+  call       Call?        @relation(fields: [callId], references: [id], onDelete: Cascade)
+  noteId     String?
+  note       Note?        @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  taskId     String?
+  task       Task?        @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  createdAt  DateTime     @default(now())
+
+  @@index([leadId, createdAt])
+  @@index([contactId, createdAt])
+}
+
+// Single row (id "default"): SHA-hashed bootstrap/admin key, set or rotated via /api/admin/master-key.
+model MasterKey {
+  id          String   @id @default("default")
+  keyHash     String
+  version     Int      @default(1)
+  rotatedAt   DateTime @default(now())
+  rotatedById String?
 }

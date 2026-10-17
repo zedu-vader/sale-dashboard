@@ -1,8 +1,9 @@
 "use client";
 
-// ZEDU/Field label, ZEDU/Input, ZEDU/Search, ZEDU/Checkbox (Figma 16799:18218).
+// ZEDU/Field label, ZEDU/Input, ZEDU/Search, ZEDU/Checkbox (Figma 16799:18218),
+// ZEDU/Select and ZEDU/Textarea (Figma 16829:19783, 16829:19796).
 
-import { Check, CircleAlert, Minus, Search as SearchIcon } from "lucide-react";
+import { Calendar, Check, ChevronDown, CircleAlert, Minus, Search as SearchIcon } from "lucide-react";
 import {
   forwardRef,
   useEffect,
@@ -12,6 +13,8 @@ import {
   type InputHTMLAttributes,
   type LabelHTMLAttributes,
   type ReactNode,
+  type SelectHTMLAttributes,
+  type TextareaHTMLAttributes,
 } from "react";
 import { cx } from "./cx";
 
@@ -192,5 +195,178 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(function Che
       </span>
       <span className={hideLabel ? "sr-only" : undefined}>{label}</span>
     </label>
+  );
+});
+
+/* Shared frame for Select, DateField and Textarea: label, bordered box, helper/error line. */
+
+const boxBase =
+  "relative flex items-center gap-2 rounded-z-md border px-3 transition-[border-color,box-shadow] duration-150 [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-z-icon";
+
+function boxState(disabled?: boolean, error?: string) {
+  if (disabled) return "border-z-line-strong bg-z-sunken";
+  return cx(
+    "bg-z-surface shadow-z-xs focus-within:border-z-line-focus focus-within:shadow-z-focus-input",
+    error ? "border-z-line-danger" : "border-z-line-strong hover:border-z-line-hover",
+  );
+}
+
+function FieldFrame({
+  id,
+  label,
+  required,
+  helper,
+  error,
+  disabled,
+  className,
+  children,
+}: {
+  id: string;
+  label?: string;
+  required?: boolean;
+  helper?: string;
+  error?: string;
+  disabled?: boolean;
+  className?: string;
+  children: ReactNode;
+}) {
+  const message = error ?? helper;
+  return (
+    <div className={cx("flex flex-col gap-1.5", disabled && "opacity-50", className)}>
+      {label && (
+        <FieldLabel htmlFor={id} required={required}>
+          {label}
+        </FieldLabel>
+      )}
+      {children}
+      {message && (
+        <p
+          id={`${id}-message`}
+          className={cx("flex items-center gap-1 text-z-caption font-normal", error ? "text-z-fg-danger" : "text-z-fg-muted")}
+        >
+          {error && <CircleAlert aria-hidden className="size-3.5 shrink-0" />}
+          {message}
+        </p>
+      )}
+    </div>
+  );
+}
+
+type SelectProps = Omit<SelectHTMLAttributes<HTMLSelectElement>, "size"> & {
+  label?: string;
+  helper?: string;
+  error?: string;
+  /** 16px leading icon, e.g. <UserRound />. */
+  icon?: ReactNode;
+  children: ReactNode;
+};
+
+/** 36px dropdown field (native select, so it's keyboard and screen-reader friendly everywhere). */
+export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select(
+  { label, helper, error, icon, required, disabled, id, className, children, ...rest },
+  ref,
+) {
+  const autoId = useId();
+  const selectId = id ?? autoId;
+  return (
+    <FieldFrame id={selectId} label={label} required={required} helper={helper} error={error} disabled={disabled} className={className}>
+      <div className={cx(boxBase, "h-9 pr-2.5", boxState(disabled, error))}>
+        {icon}
+        <select
+          ref={ref}
+          id={selectId}
+          required={required}
+          disabled={disabled}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error || helper ? `${selectId}-message` : undefined}
+          className="h-full min-w-0 flex-1 cursor-pointer appearance-none truncate bg-transparent pr-6 text-z-body font-normal text-z-fg outline-none focus-visible:outline-none disabled:cursor-not-allowed"
+          {...rest}
+        >
+          {children}
+        </select>
+        <ChevronDown aria-hidden className="pointer-events-none absolute right-2.5" />
+      </div>
+    </FieldFrame>
+  );
+});
+
+type DateFieldProps = Omit<InputHTMLAttributes<HTMLInputElement>, "size" | "type" | "value"> & {
+  label?: string;
+  helper?: string;
+  error?: string;
+  /** yyyy-mm-dd, or "" for none. */
+  value: string;
+  placeholder?: string;
+};
+
+/** Date picker field styled like ZEDU/Select with a calendar icon and a "Pick a date" placeholder. */
+export const DateField = forwardRef<HTMLInputElement, DateFieldProps>(function DateField(
+  { label, helper, error, required, disabled, id, className, value, placeholder = "Pick a date", ...rest },
+  ref,
+) {
+  const autoId = useId();
+  const inputId = id ?? autoId;
+  const inner = useRef<HTMLInputElement>(null);
+  useImperativeHandle(ref, () => inner.current!);
+  return (
+    <FieldFrame id={inputId} label={label} required={required} helper={helper} error={error} disabled={disabled} className={className}>
+      <div className={cx(boxBase, "h-9 pr-2.5", boxState(disabled, error))}>
+        <Calendar aria-hidden />
+        <input
+          ref={inner}
+          id={inputId}
+          type="date"
+          value={value}
+          required={required}
+          disabled={disabled}
+          aria-invalid={error ? true : undefined}
+          onClick={() => inner.current?.showPicker?.()}
+          className={cx(
+            "peer h-full min-w-0 flex-1 cursor-pointer bg-transparent text-z-body font-normal outline-none focus-visible:outline-none [&::-webkit-calendar-picker-indicator]:opacity-0",
+            value ? "text-z-fg" : "text-transparent focus:text-z-fg",
+          )}
+          {...rest}
+        />
+        {!value && (
+          <span aria-hidden className="pointer-events-none absolute left-9 text-z-body text-z-fg-placeholder peer-focus:hidden">
+            {placeholder}
+          </span>
+        )}
+        <ChevronDown aria-hidden className="pointer-events-none absolute right-2.5" />
+      </div>
+    </FieldFrame>
+  );
+});
+
+type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
+  label?: string;
+  helper?: string;
+  error?: string;
+};
+
+/** Multi-line field, 96px tall by default. */
+export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function Textarea(
+  { label, helper, error, required, disabled, id, className, rows = 4, ...rest },
+  ref,
+) {
+  const autoId = useId();
+  const areaId = id ?? autoId;
+  return (
+    <FieldFrame id={areaId} label={label} required={required} helper={helper} error={error} disabled={disabled} className={className}>
+      <textarea
+        ref={ref}
+        id={areaId}
+        rows={rows}
+        required={required}
+        disabled={disabled}
+        aria-invalid={error ? true : undefined}
+        className={cx(
+          "min-h-24 resize-y rounded-z-md border px-3 py-2 text-z-body font-normal text-z-fg outline-none transition-[border-color,box-shadow] duration-150 placeholder:text-z-fg-placeholder focus-visible:outline-none",
+          boxState(disabled, error),
+          "focus:border-z-line-focus focus:shadow-z-focus-input",
+        )}
+        {...rest}
+      />
+    </FieldFrame>
   );
 });
