@@ -21,7 +21,6 @@ export default async function Home({ searchParams }: Props) {
     <AppShell
       user={{ name, email: session.user.email, image: session.user.image, role: session.user.role }}
       openTaskCount={data.openTaskCount}
-      unread={data.overdueCount > 0}
       accessRequestCount={shell.accessRequestCount}
     >
       <Dashboard data={data} firstName={name.split(/\s+/)[0]} />

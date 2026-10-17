@@ -27,6 +27,7 @@ import { Button, IconButton } from "./Button";
 import { cx } from "./cx";
 import { Search } from "./Field";
 import { Dropdown, Menu, MenuDivider, MenuHeader, MenuItem, MenuLabel } from "./Menu";
+import { NotificationsBell } from "@/components/notifications/NotificationsBell";
 
 /** Placeholder Zedu logo (black mark + wordmark) until official brand assets are confirmed. */
 export function Logo({ mark = false, className }: { mark?: boolean; className?: string }) {
@@ -205,8 +206,6 @@ type TopBarProps = {
   onOpenMenu?: () => void;
   onSearch?: (query: string) => void;
   onHelp?: () => void;
-  onNotifications?: () => void;
-  unread?: boolean;
   /** Contents of the "New" dropdown, usually <NewMenu />. */
   newMenu?: ReactNode;
   /** Replaces the built-in search box (e.g. a search with live results). It then owns ⌘K itself. */
@@ -225,8 +224,6 @@ export function TopBar({
   onOpenMenu,
   onSearch,
   onHelp,
-  onNotifications,
-  unread,
   newMenu = <NewMenu />,
   search,
   onMobileSearch,
@@ -282,7 +279,7 @@ export function TopBar({
       <IconButton label="Help" className="max-md:hidden" onClick={onHelp}>
         <CircleHelp aria-hidden />
       </IconButton>
-      <NotificationsButton unread={unread} onClick={onNotifications} />
+      <NotificationsBell />
       <div aria-hidden className="h-5 w-px bg-z-line max-md:hidden" />
       <Dropdown
         align="end"

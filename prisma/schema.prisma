@@ -33,6 +33,7 @@ model User {
   calls           Call[]
   notes           Note[]
   activities      Activity[]
+  notifications   Notification[]
 }
 
 enum Role {
@@ -403,4 +404,25 @@ model MasterKey {
   version     Int      @default(1)
   rotatedAt   DateTime @default(now())
   rotatedById String?
+}
+
+// A prompt for one user: something they need to do or know. `key` dedupes generation so a
+// notification can be (re)created on every page load without piling up rows.
+model Notification {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Dedupe key, e.g. "TASK_OVERDUE:<taskId>". Unique per user, so generation is idempotent.
+  key       String
+  type      String
+  title     String
+  body      String?
+  /// Route opened when the notification is clicked.
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@unique([userId, key])
+  @@index([userId, readAt])
+  @@index([userId, type])
 }
