@@ -8,7 +8,7 @@ import type { LeadStatus } from "@prisma/client";
 import { updateLead, type CallInput, type TaskInput } from "@/app/leads/actions";
 import { validateLead, type LeadFormErrors, type LeadFormValues } from "@/lib/leadForm";
 import type { LeadProfile, TeamMember } from "@/lib/leadTypes";
-import { CALL_OUTCOMES, STAGES, STATUS_ORDER, TASK_TYPES } from "@/lib/status";
+import { LEGACY_CALL_OUTCOME_OPTIONS, STAGES, STATUS_ORDER, TASK_TYPES } from "@/lib/status";
 import { Alert, Button, Input, Modal, Select, Sheet, Textarea } from "@/components/zedu";
 import { LeadFormFields, OwnerSelect } from "./LeadFormFields";
 
@@ -166,7 +166,7 @@ export function LogCallModal({ open, onClose, description, status, onSave }: Log
         {error && <Alert tone="danger" title={error} />}
         <div className="grid grid-cols-2 gap-4 max-sm:grid-cols-1">
           <Select label="Outcome" value={values.outcome} onChange={(e) => setValues({ ...values, outcome: e.target.value })}>
-            {Object.entries(CALL_OUTCOMES).map(([k, v]) => (
+            {Object.entries(LEGACY_CALL_OUTCOME_OPTIONS).map(([k, v]) => (
               <option key={k} value={k}>
                 {v}
               </option>

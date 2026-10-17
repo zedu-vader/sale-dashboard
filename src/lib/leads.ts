@@ -1,11 +1,11 @@
-import { ActivityType, CallOutcome, LeadStatus, LeadType, type Prisma, type TaskType } from "@prisma/client";
+import { ActivityType, CallConnectionStatus, LegacyCallOutcome, LeadStatus, LeadType, type Prisma, type TaskType } from "@prisma/client";
 import type { Due } from "@/components/zedu";
 import { formatDate, formatTime } from "./format";
 import { prisma } from "./prisma";
 import type { LeadListData, LeadListParams, LeadProfile, LeadSort, LeadTab, ProfileTask, TeamMember, TimelineEntry } from "./leadTypes";
 import { PAGE_SIZE } from "./leadTypes";
 import { phoneSearchDigits } from "./leadForm";
-import { CALL_OUTCOMES, LOST_REASONS, contactCode, initialsOf, leadCode } from "./status";
+import { CALL_OUTCOMES, LEGACY_CALL_OUTCOMES, LOST_REASONS, contactCode, initialsOf, leadCode } from "./status";
 
 export * from "./leadTypes";
 
@@ -149,7 +149,7 @@ export async function getLeadList(p: LeadListParams, meId: string): Promise<Lead
     include: {
       contact: { select: { name: true, type: true, phone: true, company: true } },
       owner: { select: { id: true, name: true, email: true } },
-      calls: { orderBy: { calledAt: "desc" }, take: 1, select: { outcome: true, calledAt: true } },
+      calls: { orderBy: { calledAt: "desc" }, take: 1, select: { legacyOutcome: true, connectionStatus: true, calledAt: true } },
       tasks: { where: { done: false }, orderBy: { dueAt: "asc" }, take: 1, select: { title: true, dueAt: true } },
     },
   });
@@ -170,7 +170,7 @@ export async function getLeadList(p: LeadListParams, meId: string): Promise<Lead
         status: l.status,
         owner: l.owner && ownerName ? { id: l.owner.id, name: ownerName, initials: initialsOf(ownerName) } : null,
         lastInteraction: call
-          ? `${call.outcome === CallOutcome.NO_ANSWER ? "No answer" : "Call"} · ${formatDate(call.calledAt, now)}`
+          ? `${call.legacyOutcome === LegacyCallOutcome.NO_ANSWER || call.connectionStatus === CallConnectionStatus.NOT_CONNECTED ? "No answer" : "Call"} · ${formatDate(call.calledAt, now)}`
           : null,
         nextAction: task && due ? { text: `${task.title} · ${due.text}`, overdue: due.overdue } : null,
       };
@@ -240,11 +240,11 @@ export async function getLeadProfile(id: string): Promise<LeadProfile | null> {
       fromCall: t.call ? `From call · ${formatDate(t.call.calledAt, now)}` : null,
     };
   };
-  const callBody = (c: { outcome: CallOutcome; durationSec: number | null; notes: string | null }) => ({
-    outcome: CALL_OUTCOMES[c.outcome],
-    connected: c.outcome === CallOutcome.CONNECTED,
+  const callBody = (c: { outcome: import("@prisma/client").CallOutcome; legacyOutcome: LegacyCallOutcome | null; connectionStatus: CallConnectionStatus; durationSeconds: number | null; notes: string | null }) => ({
+    outcome: c.legacyOutcome ? LEGACY_CALL_OUTCOMES[c.legacyOutcome] : CALL_OUTCOMES[c.outcome],
+    connected: c.connectionStatus === CallConnectionStatus.CONNECTED,
     status: null,
-    duration: duration(c.durationSec),
+    duration: duration(c.durationSeconds),
     notes: c.notes,
   });
 
@@ -294,7 +294,7 @@ export async function getLeadProfile(id: string): Promise<LeadProfile | null> {
     created: `${fullDate.format(lead.createdAt)}${lead.createdBy ? ` · ${userName(lead.createdBy)}` : ""}`,
     createdShort: fullDate.format(lead.createdAt),
     lastInteraction: lastCall
-      ? `${lastCall.outcome === CallOutcome.NO_ANSWER ? "No answer" : "Call"} · ${stamp(lastCall.calledAt, now)}`
+      ? `${lastCall.legacyOutcome === LegacyCallOutcome.NO_ANSWER || lastCall.connectionStatus === CallConnectionStatus.NOT_CONNECTED ? "No answer" : "Call"} · ${stamp(lastCall.calledAt, now)}`
       : null,
     nextTask: openTasks[0] ?? null,
     tasks,

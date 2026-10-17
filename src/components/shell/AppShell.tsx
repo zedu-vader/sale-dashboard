@@ -38,16 +38,17 @@ type Props = {
   unread: boolean;
   /** Pending access requests, shown to admins on Team & invitations. */
   accessRequestCount?: number;
+  /** Suppresses action menus when rendering the isolated sample-only Calls preview. */
+  previewMode?: boolean;
   /** Active nav item. Defaults to "Dashboard". */
   active?: string;
   children: ReactNode;
 };
 
-// The Calls page isn't built yet, so that item doesn't navigate.
 const NAV = [
   { label: "Dashboard", href: "/", icon: <LayoutDashboard aria-hidden /> },
   { label: "Leads", href: "/leads", icon: <UserRound aria-hidden /> },
-  { label: "Calls", href: "#", icon: <Phone aria-hidden /> },
+  { label: "Calls", href: "/calls", icon: <Phone aria-hidden /> },
   { label: "Tasks", href: "/tasks", icon: <SquareCheck aria-hidden />, tasks: true },
   { label: "Contacts", href: "/contacts", icon: <Contact aria-hidden /> },
 ];
@@ -68,7 +69,7 @@ const isActive = (href: string, pathname: string) =>
   href !== "#" && (href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`));
 
 /** `active` (a nav label) overrides the URL-based active item. */
-export function AppShell({ user, openTaskCount, unread, accessRequestCount = 0, active, children }: Props) {
+export function AppShell({ user, openTaskCount, unread, accessRequestCount = 0, active, previewMode = false, children }: Props) {
   const wide = useWideScreen();
   const pathname = usePathname();
   const search = useSearchParams();
@@ -211,8 +212,9 @@ export function AppShell({ user, openTaskCount, unread, accessRequestCount = 0, 
           onOpenMenu={() => setDrawer(true)}
           search={<GlobalSearch ref={searchRef} />}
           onMobileSearch={() => setMobileSearch((v) => !v)}
-          newMenu={
+          newMenu={previewMode ? undefined :
             <NewMenu
+              onLogCall={() => router.push("/calls?log=1")}
               onAddLead={() => router.push("/leads?new=1")}
               onNewTask={() => setAddingTask(true)}
               onAddContact={() => setAddingContact(true)}
@@ -229,15 +231,15 @@ export function AppShell({ user, openTaskCount, unread, accessRequestCount = 0, 
       </div>
 
       {/* Opened from the top-bar New menu on any page. */}
-      <AddContactModal open={addingContact} onClose={() => setAddingContact(false)} />
-      <NewTaskModal
+      {!previewMode && <AddContactModal open={addingContact} onClose={() => setAddingContact(false)} />}
+      {!previewMode && <NewTaskModal
         open={addingTask}
         onClose={() => setAddingTask(false)}
         onCreated={(title) => {
           setToast({ id: Date.now(), message: `"${title}" created` });
           router.refresh();
         }}
-      />
+      />}
       {toast && (
         <TasksToast
           key={toast.id}

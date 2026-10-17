@@ -1,4 +1,4 @@
-import type { CallOutcome, LeadStatus, LeadType, LostReason, TaskType } from "@prisma/client";
+import type { CallOutcome, LegacyCallOutcome, LeadStatus, LeadType, LostReason, TaskType } from "@prisma/client";
 import type { Stage, TaskKind } from "@/components/zedu";
 
 // Lead pipeline stages. `stage` picks the ZEDU status pill colour; `label` is the wording on screen
@@ -27,6 +27,23 @@ export const LOST_REASONS: Record<LostReason, string> = {
 };
 
 export const CALL_OUTCOMES: Record<CallOutcome, string> = {
+  REQUESTED_CALLBACK: "Requested callback",
+  INTERESTED: "Interested",
+  NOT_INTERESTED: "Not interested",
+  CONVERTED: "Converted",
+  OTHER: "Other",
+  NOT_APPLICABLE: "Not applicable",
+};
+
+export const LEGACY_CALL_OUTCOMES: Record<LegacyCallOutcome, string> = {
+  CONNECTED: "Historical: connected",
+  NO_ANSWER: "Historical: no answer",
+  NOT_INTERESTED: "Historical: not interested",
+  OTHER: "Historical: other",
+};
+
+/** Options for the existing lead/contact call logger, which still writes the legacy database outcome. */
+export const LEGACY_CALL_OUTCOME_OPTIONS: Record<LegacyCallOutcome, string> = {
   CONNECTED: "Connected",
   NO_ANSWER: "No answer",
   NOT_INTERESTED: "Not interested",

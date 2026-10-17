@@ -1,6 +1,6 @@
 // Contacts queries (server only): the list with its tabs and filters, possible duplicates, and the profile.
 
-import { ActivityType, CallOutcome, LeadType, type Prisma } from "@prisma/client";
+import { ActivityType, CallConnectionStatus, LegacyCallOutcome, LeadType, type Prisma } from "@prisma/client";
 import type {
   ContactCall,
   ContactListData,
@@ -18,7 +18,7 @@ import { formatDate } from "./format";
 import { PAGE_SIZE, type ProfileTask, type TimelineEntry } from "./leadTypes";
 import { contactSearch, dueLabel, duration, fullDate, shortDue, stamp, userName } from "./leads";
 import { prisma } from "./prisma";
-import { CALL_OUTCOMES, contactCode, initialsOf, leadCode } from "./status";
+import { CALL_OUTCOMES, LEGACY_CALL_OUTCOMES, contactCode, initialsOf, leadCode } from "./status";
 
 export * from "./contactTypes";
 
@@ -113,7 +113,7 @@ export async function getContactList(p: ContactListParams): Promise<ContactListD
         take: PAGE_SIZE,
         include: {
           leads: { orderBy: { createdAt: "desc" }, select: { id: true, code: true, status: true } },
-          calls: { orderBy: { calledAt: "desc" }, take: 1, select: { outcome: true, calledAt: true } },
+          calls: { orderBy: { calledAt: "desc" }, take: 1, select: { legacyOutcome: true, connectionStatus: true, calledAt: true } },
         },
       });
 
@@ -130,7 +130,7 @@ export async function getContactList(p: ContactListParams): Promise<ContactListD
         email: c.email,
         company: c.company,
         lead: lead ? { id: lead.id, code: leadCode(lead.code), status: lead.status, more: c.leads.length - 1 } : null,
-        lastInteraction: call ? `${call.outcome === CallOutcome.NO_ANSWER ? "No answer" : "Call"} · ${formatDate(call.calledAt, now)}` : null,
+        lastInteraction: call ? `${call.legacyOutcome === LegacyCallOutcome.NO_ANSWER || call.connectionStatus === CallConnectionStatus.NOT_CONNECTED ? "No answer" : "Call"} · ${formatDate(call.calledAt, now)}` : null,
         created: formatDate(c.createdAt, now),
       };
     }),
@@ -221,11 +221,11 @@ export async function resolveContactId(id: string): Promise<string | null> {
   return current;
 }
 
-const callBody = (c: { outcome: CallOutcome; durationSec: number | null; notes: string | null }) => ({
-  outcome: CALL_OUTCOMES[c.outcome],
-  connected: c.outcome === CallOutcome.CONNECTED,
+const callBody = (c: { outcome: import("@prisma/client").CallOutcome; legacyOutcome: LegacyCallOutcome | null; connectionStatus: CallConnectionStatus; durationSeconds: number | null; notes: string | null }) => ({
+  outcome: c.legacyOutcome ? LEGACY_CALL_OUTCOMES[c.legacyOutcome] : CALL_OUTCOMES[c.outcome],
+  connected: c.connectionStatus === CallConnectionStatus.CONNECTED,
   status: null,
-  duration: duration(c.durationSec),
+  duration: duration(c.durationSeconds),
   notes: c.notes,
 });
 
@@ -328,10 +328,10 @@ export async function getContactProfile(id: string): Promise<ContactProfile | nu
       id: c.id,
       date: stamp(c.calledAt, now),
       at: c.calledAt.toISOString(),
-      outcome: CALL_OUTCOMES[c.outcome],
-      connected: c.outcome === CallOutcome.CONNECTED,
+      outcome: c.legacyOutcome ? LEGACY_CALL_OUTCOMES[c.legacyOutcome] : CALL_OUTCOMES[c.outcome],
+      connected: c.connectionStatus === CallConnectionStatus.CONNECTED,
       notes: c.notes,
-      duration: duration(c.durationSec),
+      duration: duration(c.durationSeconds),
       caller: name ? { name, initials: initialsOf(name) } : null,
       lead: c.lead ? { id: c.lead.id, code: leadCode(c.lead.code) } : null,
     };
@@ -348,7 +348,7 @@ export async function getContactProfile(id: string): Promise<ContactProfile | nu
     notes: contact.notes,
     created: `${fullDate.format(contact.createdAt)}${contact.createdBy ? ` · ${userName(contact.createdBy)}` : ""}`,
     createdShort: fullDate.format(contact.createdAt),
-    lastInteraction: lastCall ? `${lastCall.outcome === CallOutcome.NO_ANSWER ? "No answer" : "Call"} · ${stamp(lastCall.calledAt, now)}` : null,
+    lastInteraction: lastCall ? `${lastCall.legacyOutcome === LegacyCallOutcome.NO_ANSWER || lastCall.connectionStatus === CallConnectionStatus.NOT_CONNECTED ? "No answer" : "Call"} · ${stamp(lastCall.calledAt, now)}` : null,
     leads: contact.leads.map((l) => {
       const task = l.tasks[0];
       const parts = [`Owner ${l.owner ? userName(l.owner) : "unassigned"}`];

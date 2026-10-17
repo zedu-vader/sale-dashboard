@@ -39,6 +39,7 @@ import {
 } from "@/components/zedu";
 import { HistoryTabs, NextActionCard, NoteComposer, TasksTab, Timeline, card, type HistoryTab } from "@/components/records/ProfileParts";
 import { EditLeadSheet, LogCallModal, NewTaskModal } from "./LeadDialogs";
+import { LeadCallHistory } from "@/components/calls/LeadCallHistory";
 
 type Tab = HistoryTab;
 
@@ -230,7 +231,7 @@ export function LeadProfileView({ lead, team, me, initialTab, initialEdit }: Pro
               )}
               {tab === "calls" && (
                 <div className="p-4">
-                  <Timeline entries={lead.calls} empty="No calls logged yet. Use Log call after you speak to them." />
+                  <LeadCallHistory leadId={lead.id} />
                 </div>
               )}
               {tab === "tasks" && <TasksTab tasks={lead.tasks} linkedTo={lead.name} onNewTask={() => setNewTask(true)} />}

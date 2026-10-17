@@ -1,6 +1,6 @@
 import {
   ActivityType,
-  CallOutcome,
+  LegacyCallOutcome,
   LeadStatus,
   LeadType,
   LostReason,
@@ -169,7 +169,7 @@ async function main() {
     data: { notes: "Owns three outlets (Lekki, Yaba, Ikeja). Prefers WhatsApp for documents; calls before 11 AM." },
   });
   const earlyCall = await prisma.call.create({
-    data: { leadId: amaka.id, outcome: CallOutcome.CONNECTED, calledAt: at(2, 11, 20), durationSec: 180, notes: "Asked for the outlet list before quoting.", userId: agnes.id },
+    data: { leadId: amaka.id, legacyOutcome: LegacyCallOutcome.CONNECTED, calledAt: at(2, 11, 20), durationSeconds: 180, notes: "Asked for the outlet list before quoting.", userId: agnes.id },
   });
   await prisma.task.create({
     data: { title: "Confirm outlet list with Amaka", description: "Confirm the outlet list before quoting.", type: TaskType.CALL, dueAt: at(2, 16), done: true, completedAt: at(2, 16), ownerId: agnes.id, leadId: amaka.id, userId: agnes.id, callId: earlyCall.id },
@@ -178,7 +178,7 @@ async function main() {
     data: { leadId: amaka.id, authorId: ibrahim.id, body: "Spoke to her assistant, Tolu. Best time to call is mornings before 11 AM.", createdAt: at(1, 16, 5) },
   });
   const call = await prisma.call.create({
-    data: { leadId: amaka.id, outcome: CallOutcome.CONNECTED, calledAt: at(0, 10, 12), durationSec: 240, notes: "Wants pricing for 3 outlets (Lekki, Yaba, Ikeja). Send proposal by Friday.", userId: agnes.id },
+    data: { leadId: amaka.id, legacyOutcome: LegacyCallOutcome.CONNECTED, calledAt: at(0, 10, 12), durationSeconds: 240, notes: "Wants pricing for 3 outlets (Lekki, Yaba, Ikeja). Send proposal by Friday.", userId: agnes.id },
   });
   const task = await prisma.task.create({
     data: { title: "Send proposal to Lagoon Foods", description: "Confirm pricing for 3 outlets and send the proposal before Friday.", type: TaskType.FOLLOW_UP, dueAt: at(0, 15), ownerId: agnes.id, leadId: amaka.id, userId: agnes.id, callId: call.id, createdAt: at(0, 10, 15) },
@@ -210,15 +210,15 @@ async function main() {
   }
 
   // Calls: the mock's last 7 days, plus quieter background days for earlier in the month/previous period.
-  const calls: { leadId: string; outcome: CallOutcome; calledAt: Date; durationSec: number | null; userId: string }[] = [];
+  const calls: { leadId: string; legacyOutcome: LegacyCallOutcome; calledAt: Date; durationSeconds: number | null; userId: string }[] = [];
   const addDay = (daysAgo: number, connected: number, unanswered: number) => {
     for (let i = 0; i < connected; i++) {
       const r = rand();
-      const outcome = r < 0.1 ? CallOutcome.NOT_INTERESTED : r < 0.18 ? CallOutcome.OTHER : CallOutcome.CONNECTED;
-      calls.push({ leadId: pick(fillerIds), outcome, calledAt: at(daysAgo, 8 + Math.floor(rand() * 9), Math.floor(rand() * 60)), durationSec: 60 + Math.floor(rand() * 600), userId: pick(team).id });
+      const outcome = r < 0.1 ? LegacyCallOutcome.NOT_INTERESTED : r < 0.18 ? LegacyCallOutcome.OTHER : LegacyCallOutcome.CONNECTED;
+      calls.push({ leadId: pick(fillerIds), legacyOutcome: outcome, calledAt: at(daysAgo, 8 + Math.floor(rand() * 9), Math.floor(rand() * 60)), durationSeconds: 60 + Math.floor(rand() * 600), userId: pick(team).id });
     }
     for (let i = 0; i < unanswered; i++) {
-      calls.push({ leadId: pick(fillerIds), outcome: CallOutcome.NO_ANSWER, calledAt: at(daysAgo, 8 + Math.floor(rand() * 9), Math.floor(rand() * 60)), durationSec: null, userId: pick(team).id });
+      calls.push({ leadId: pick(fillerIds), legacyOutcome: LegacyCallOutcome.NO_ANSWER, calledAt: at(daysAgo, 8 + Math.floor(rand() * 9), Math.floor(rand() * 60)), durationSeconds: null, userId: pick(team).id });
     }
   };
   for (const [daysAgo, , connected, unanswered] of recentDays) addDay(daysAgo, connected, unanswered);
@@ -230,16 +230,16 @@ async function main() {
   await prisma.call.createMany({ data: calls });
 
   // Named leads' last interactions from the frames.
-  const interactions: [string, CallOutcome, Date][] = [
-    ["Tunde Bakare", CallOutcome.NO_ANSWER, at(3, 15)],
-    ["Femi Adeyemi", CallOutcome.CONNECTED, at(3, 11)],
-    ["Ngozi Nwosu", CallOutcome.CONNECTED, at(5, 10)],
-    ["Kunle Ajayi", CallOutcome.NOT_INTERESTED, at(7, 12)],
-    ["Halima Sani", CallOutcome.CONNECTED, at(2, 14)],
+  const interactions: [string, LegacyCallOutcome, Date][] = [
+    ["Tunde Bakare", LegacyCallOutcome.NO_ANSWER, at(3, 15)],
+    ["Femi Adeyemi", LegacyCallOutcome.CONNECTED, at(3, 11)],
+    ["Ngozi Nwosu", LegacyCallOutcome.CONNECTED, at(5, 10)],
+    ["Kunle Ajayi", LegacyCallOutcome.NOT_INTERESTED, at(7, 12)],
+    ["Halima Sani", LegacyCallOutcome.CONNECTED, at(2, 14)],
   ];
   for (const [name, outcome, calledAt] of interactions) {
     const lead = await prisma.lead.findFirstOrThrow({ where: { contact: { name } } });
-    const c = await prisma.call.create({ data: { leadId: lead.id, outcome, calledAt, durationSec: outcome === CallOutcome.NO_ANSWER ? null : 150, userId: lead.ownerId } });
+    const c = await prisma.call.create({ data: { leadId: lead.id, legacyOutcome: outcome, calledAt, durationSeconds: outcome === LegacyCallOutcome.NO_ANSWER ? null : 150, userId: lead.ownerId } });
     await prisma.activity.create({ data: { leadId: lead.id, actorId: lead.ownerId, type: ActivityType.CALL_LOGGED, callId: c.id, createdAt: calledAt } });
   }
 
@@ -256,7 +256,7 @@ async function main() {
   for (const { calls: n = 0, ...e } of extras) {
     const c = await prisma.contact.create({ data: contactData(e) });
     for (let i = 0; i < n; i++) {
-      const call = await prisma.call.create({ data: { contactId: c.id, outcome: CallOutcome.NO_ANSWER, calledAt: at(1, 12), userId: e.createdById } });
+      const call = await prisma.call.create({ data: { contactId: c.id, legacyOutcome: LegacyCallOutcome.NO_ANSWER, calledAt: at(1, 12), userId: e.createdById } });
       await prisma.activity.create({ data: { contactId: c.id, actorId: e.createdById, type: ActivityType.CALL_LOGGED, callId: call.id, createdAt: call.calledAt } });
     }
   }

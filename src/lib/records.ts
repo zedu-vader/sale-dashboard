@@ -1,7 +1,7 @@
 // Server-side writes shared by the lead and contact screens: calls, tasks and notes, each linked to a
 // contact and (when there is one) a lead, with the matching timeline entry. Also the duplicate-phone lookup.
 
-import { ActivityType, CallOutcome, LeadStatus, LostReason, TaskType, type Prisma } from "@prisma/client";
+import { ActivityType, LegacyCallOutcome, LeadStatus, LostReason, TaskType, type Prisma } from "@prisma/client";
 import type { DuplicateMatch } from "./contactTypes";
 import { phoneKey } from "./leadForm";
 import { prisma } from "./prisma";
@@ -78,7 +78,7 @@ export type CallInput = { outcome: string; minutes: string; notes: string; statu
  * and a follow-up task can be added; without one, the follow-up task sits on the contact.
  */
 export async function recordCall(meId: string, target: Target, input: CallInput): Promise<{ ok: true } | { ok: false; error: string }> {
-  if (!(input.outcome in CallOutcome)) return { ok: false, error: "Pick how the call went." };
+  if (!(input.outcome in LegacyCallOutcome)) return { ok: false, error: "Pick how the call went." };
   const minutes = input.minutes ? Number(input.minutes) : null;
   if (minutes !== null && (!Number.isFinite(minutes) || minutes < 0 || minutes > 600)) return { ok: false, error: "Enter the duration in minutes (0–600)." };
   const lead = target.leadId
@@ -92,8 +92,8 @@ export async function recordCall(meId: string, target: Target, input: CallInput)
     const call = await tx.call.create({
       data: {
         ...target,
-        outcome: input.outcome as CallOutcome,
-        durationSec: minutes === null ? null : Math.round(minutes * 60),
+        legacyOutcome: input.outcome as LegacyCallOutcome,
+        durationSeconds: minutes === null ? null : Math.round(minutes * 60),
         notes: input.notes.trim().slice(0, 5000) || null,
         userId: meId,
         calledAt: now,

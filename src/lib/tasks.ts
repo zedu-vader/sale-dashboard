@@ -1,6 +1,7 @@
 import { TaskType, type Prisma } from "@prisma/client";
 import type { DueTone, TaskItem, TaskType as ClientType } from "@/data/tasks";
 import { prisma } from "./prisma";
+import { CALL_OUTCOMES, LEGACY_CALL_OUTCOMES } from "./status";
 
 const LAGOS = "Africa/Lagos";
 
@@ -30,7 +31,7 @@ type Row = Prisma.TaskGetPayload<{
   include: {
     owner: { select: { id: true; name: true } };
     lead: { select: { id: true; contact: { select: { name: true } } } };
-    call: { select: { id: true; calledAt: true; lead: { select: { contact: { select: { name: true } } } } } };
+    call: { select: { id: true; calledAt: true; outcome: true; legacyOutcome: true; connectionStatus: true; durationSeconds: true; lead: { select: { contact: { select: { name: true } } } } } };
     user: { select: { name: true } };
   };
 }>;
@@ -87,8 +88,8 @@ export function toTaskItem(t: Row, now = new Date()): TaskItem {
       ? {
           person: t.call.lead?.contact.name ?? t.lead?.contact.name ?? "a lead",
           when: `${dayFmt.format(t.call.calledAt)}, ${timeFmt.format(t.call.calledAt)}`,
-          outcome: "Connected",
-          duration: "",
+          outcome: t.call.legacyOutcome ? LEGACY_CALL_OUTCOMES[t.call.legacyOutcome] : CALL_OUTCOMES[t.call.outcome],
+          duration: t.call.durationSeconds === null ? "" : `${Math.round(t.call.durationSeconds / 60)} min`,
         }
       : undefined,
     createdBy: t.user?.name ? `Created by ${t.user.name} on ${dayFmt.format(t.createdAt)}` : "",
@@ -99,7 +100,7 @@ const taskInclude = {
   owner: { select: { id: true, name: true } },
   // A lead's name lives on its contact.
   lead: { select: { id: true, contact: { select: { name: true } } } },
-  call: { select: { id: true, calledAt: true, lead: { select: { contact: { select: { name: true } } } } } },
+  call: { select: { id: true, calledAt: true, outcome: true, legacyOutcome: true, connectionStatus: true, durationSeconds: true, lead: { select: { contact: { select: { name: true } } } } } },
   user: { select: { name: true } },
 } as const;
 
