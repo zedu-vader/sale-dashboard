@@ -46,6 +46,8 @@ Set `AUTH_SECRET` (32+ random chars; falls back to `NEXTAUTH_SECRET` if unset) a
 
 ## Pages
 
+- Top bar (every page): global search (⌘K or `/`) across leads, contacts, tasks and teammates, including phone
+  numbers in any format and LD/CT codes; "New" opens Add lead, New task and Add contact from anywhere.
 - `/` Dashboard: KPIs, recent lead activity and tasks.
 - `/leads` Leads: search, filter (status, lead type, owner), sort, tabs (All / Assigned to me / Unassigned),
   bulk assign / change status / delete, and Add lead (with duplicate-phone detection). `?new=1` opens Add lead.

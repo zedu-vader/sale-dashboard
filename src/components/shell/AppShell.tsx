@@ -7,8 +7,12 @@
 import { CircleHelp, Contact, LayoutDashboard, Phone, Search as SearchIcon, SquareCheck, UserRound, X } from "lucide-react";
 import { signOut } from "@/lib/auth/client";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { initialsOf } from "@/lib/status";
+import { AddContactModal } from "@/components/contacts/AddContactModal";
+import { TasksToast } from "@/components/tasks/TasksToast";
+import { GlobalSearch, type GlobalSearchHandle } from "./GlobalSearch";
+import { NewTaskModal } from "./NewTaskModal";
 import {
   Dropdown,
   IconButton,
@@ -69,6 +73,20 @@ export function AppShell({ user, openTaskCount, unread, active, children }: Prop
   // null = follow the viewport; the top-bar toggle pins it until the viewport class changes.
   const [pinned, setPinned] = useState<boolean | null>(null);
   const [drawer, setDrawer] = useState(false);
+  const [addingContact, setAddingContact] = useState(false);
+  const [addingTask, setAddingTask] = useState(false);
+  const [mobileSearch, setMobileSearch] = useState(false);
+  const [toast, setToast] = useState<{ id: number; message: string } | null>(null);
+  const searchRef = useRef<GlobalSearchHandle>(null);
+  useEffect(() => setMobileSearch(false), [pathname]);
+
+  /** The sidebar search box and icon hand off to the top-bar search (or the mobile search row). */
+  const focusSearch = () => {
+    if (window.matchMedia("(max-width: 767px)").matches) {
+      setDrawer(false);
+      setMobileSearch(true);
+    } else searchRef.current?.focus();
+  };
   useEffect(() => setPinned(null), [wide]);
   const collapsed = pinned ?? !wide;
 
@@ -89,11 +107,20 @@ export function AppShell({ user, openTaskCount, unread, active, children }: Prop
         <>
           <WorkspaceSwitcher workspace="Zedu" subtitle="Marketing dashboard" collapsed={rail} />
           {rail ? (
-            <IconButton label="Search" className="w-10" onClick={() => document.querySelector<HTMLInputElement>('input[name="q"]')?.focus()}>
+            <IconButton label="Search" className="w-10" onClick={focusSearch}>
               <SearchIcon aria-hidden />
             </IconButton>
           ) : (
-            <Search size="sm" shortcut="/" className="w-full shrink-0" />
+            <Search
+              size="sm"
+              shortcut="/"
+              readOnly
+              className="w-full shrink-0 cursor-pointer"
+              onFocus={(e) => {
+                e.currentTarget.blur();
+                focusSearch();
+              }}
+            />
           )}
         </>
       }
@@ -158,10 +185,44 @@ export function AppShell({ user, openTaskCount, unread, active, children }: Prop
           unread={unread}
           onToggleSidebar={() => setPinned(!collapsed)}
           onOpenMenu={() => setDrawer(true)}
-          newMenu={<NewMenu onAddLead={() => router.push("/leads?new=1")} onImport={() => {}} />}
+          search={<GlobalSearch ref={searchRef} />}
+          onMobileSearch={() => setMobileSearch((v) => !v)}
+          newMenu={
+            <NewMenu
+              onAddLead={() => router.push("/leads?new=1")}
+              onNewTask={() => setAddingTask(true)}
+              onAddContact={() => setAddingContact(true)}
+              onImport={() => {}}
+            />
+          }
         />
+        {mobileSearch && (
+          <div className="border-b border-z-line bg-z-surface px-3 py-2 md:hidden">
+            <GlobalSearch inputClassName="w-full" autoFocus />
+          </div>
+        )}
         <main className="min-h-0 flex-1 overflow-y-auto">{children}</main>
       </div>
+
+      {/* Opened from the top-bar New menu on any page. */}
+      <AddContactModal open={addingContact} onClose={() => setAddingContact(false)} />
+      <NewTaskModal
+        open={addingTask}
+        onClose={() => setAddingTask(false)}
+        onCreated={(title) => {
+          setToast({ id: Date.now(), message: `"${title}" created` });
+          router.refresh();
+        }}
+      />
+      {toast && (
+        <TasksToast
+          key={toast.id}
+          message={toast.message}
+          actionLabel="View tasks"
+          onAction={pathname === "/tasks" ? undefined : () => router.push("/tasks")}
+          onClose={() => setToast(null)}
+        />
+      )}
 
       {/* Mobile drawer */}
       <div className={`fixed inset-0 z-50 md:hidden ${drawer ? "" : "pointer-events-none"}`} aria-hidden={!drawer}>

@@ -4,7 +4,9 @@ import { revalidatePath } from "next/cache";
 import { TaskType } from "@prisma/client";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getTasks } from "@/lib/tasks";
+import { getTeam } from "@/lib/leads";
+import { searchEverything } from "@/lib/search";
+import { getLeadOptions, getTasks } from "@/lib/tasks";
 
 export async function toggleTask(id: string, done: boolean) {
   const session = await getSession();
@@ -55,7 +57,8 @@ function toDueAt(dueDate: string, dueTime: string): Date | null {
 }
 
 function refreshTasks() {
-  revalidatePath("/tasks");
+  // Tasks also show on the dashboard, the sidebar badge and lead/contact profiles.
+  revalidatePath("/", "layout");
 }
 
 export async function createTask(input: TaskInput): Promise<TaskMutation> {
@@ -116,6 +119,19 @@ export async function deleteTask(id: string): Promise<TaskMutation> {
   await prisma.task.delete({ where: { id } });
   refreshTasks();
   return { ok: true };
+}
+
+/** Top-bar search (⌘K) across leads, contacts, tasks and teammates. */
+export async function globalSearch(q: string) {
+  await requireUser();
+  return searchEverything(q);
+}
+
+/** Owners and leads for the New task dialog opened from the top bar on any page. */
+export async function getTaskFormOptions() {
+  const me = await requireUser();
+  const [team, leads] = await Promise.all([getTeam(me.id), getLeadOptions()]);
+  return { team, leads };
 }
 
 /** Fresh rows after a mutation (small data — the board re-reads instead of patching). */

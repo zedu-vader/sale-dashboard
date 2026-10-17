@@ -209,6 +209,10 @@ type TopBarProps = {
   unread?: boolean;
   /** Contents of the "New" dropdown, usually <NewMenu />. */
   newMenu?: ReactNode;
+  /** Replaces the built-in search box (e.g. a search with live results). It then owns ⌘K itself. */
+  search?: ReactNode;
+  /** Mobile (<768px) search icon. */
+  onMobileSearch?: () => void;
   className?: string;
 };
 
@@ -224,12 +228,15 @@ export function TopBar({
   onNotifications,
   unread,
   newMenu = <NewMenu />,
+  search,
+  onMobileSearch,
   className,
 }: TopBarProps) {
   const searchRef = useRef<HTMLInputElement>(null);
 
   // ⌘K / Ctrl+K focuses the global search.
   useEffect(() => {
+    if (search) return;
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
@@ -238,7 +245,7 @@ export function TopBar({
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, []);
+  }, [search]);
 
   return (
     <header
@@ -254,18 +261,22 @@ export function TopBar({
         <PanelLeft aria-hidden />
       </IconButton>
       <Logo className="md:hidden" />
-      <form
-        role="search"
-        className="max-md:hidden"
-        onSubmit={(e) => {
-          e.preventDefault();
-          onSearch?.(String(new FormData(e.currentTarget).get("q") ?? ""));
-        }}
-      >
-        <Search ref={searchRef} name="q" variant="outline" placeholder="Search leads, contacts, calls…" shortcut="⌘K" className="w-80" />
-      </form>
+      {search ? (
+        <div className="max-md:hidden">{search}</div>
+      ) : (
+        <form
+          role="search"
+          className="max-md:hidden"
+          onSubmit={(e) => {
+            e.preventDefault();
+            onSearch?.(String(new FormData(e.currentTarget).get("q") ?? ""));
+          }}
+        >
+          <Search ref={searchRef} name="q" variant="outline" placeholder="Search leads, contacts, calls…" shortcut="⌘K" className="w-80" />
+        </form>
+      )}
       <div className="flex-1" />
-      <IconButton label="Search" className="md:hidden">
+      <IconButton label="Search" className="md:hidden" onClick={onMobileSearch}>
         <SearchIcon aria-hidden />
       </IconButton>
       <IconButton label="Help" className="max-md:hidden" onClick={onHelp}>
