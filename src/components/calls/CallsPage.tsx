@@ -10,10 +10,11 @@ import { apiRequest, callOutcomeLabel, formatCallDate, formatDuration, OUTCOME_L
 type Filters = { q: string; leadId: string; callerId: string; status: string; outcome: string; from: string; to: string };
 type PageData = { items: CallRecord[]; nextCursor: string | null };
 const defaultFilters: Filters = { q: "", leadId: "", callerId: "", status: "", outcome: "", from: "", to: "" };
+const emptyPreviewData: CallRecord[] = [];
 const button = "inline-flex h-9 items-center justify-center gap-2 rounded-md border border-[#e1e1e5] bg-white px-3 text-[13px] font-medium text-[#18181c] hover:bg-[#fafafa] disabled:cursor-not-allowed disabled:opacity-50";
 const selectClass = "h-9 min-w-0 rounded-md border border-[#e1e1e5] bg-white px-2.5 text-[12px] text-[#52525c] outline-none focus-visible:ring-2 focus-visible:ring-[#b9a8ff]";
 
-export function CallsPage({ leads, callers, callerName, previewMode = false, previewData = [] }: { leads: LeadOption[]; callers: CallerOption[]; callerName: string; previewMode?: boolean; previewData?: CallRecord[] }) {
+export function CallsPage({ leads, callers, callerName, previewMode = false, previewData = emptyPreviewData }: { leads: LeadOption[]; callers: CallerOption[]; callerName: string; previewMode?: boolean; previewData?: CallRecord[] }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [filters, setFilters] = useState(defaultFilters);
