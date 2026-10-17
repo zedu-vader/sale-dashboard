@@ -7,8 +7,6 @@
     "build": "prisma generate && next build",
     "start": "next start -p ${PORT:-3000}",
     "lint": "next lint",
-    "test:csv": "node --import tsx --test tests/contact-import.test.ts",
-    "test:csv:integration": "node --import tsx --test tests/contact-import.integration.test.ts",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed"

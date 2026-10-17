@@ -6,5 +6,3 @@ out
 *.tsbuildinfo
 next-env.d.ts
 /data/tasks.json
-/.local-test/
-/outputs/
