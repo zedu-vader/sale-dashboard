@@ -5,6 +5,7 @@ import { normalizeEmail, validateName } from "@/lib/auth/validation";
 import { accessRequestEmail } from "@/lib/mail/templates";
 import { sendMail } from "@/lib/mail/transport";
 import { prisma } from "@/lib/prisma";
+import { NOTIFICATION_TYPES, notifyAdmins } from "@/lib/notifications";
 
 export async function POST(req: Request) {
   if (!sameOrigin(req)) return fail("Forbidden", 403);
@@ -29,6 +30,13 @@ export async function POST(req: Request) {
     const admins = await prisma.user.findMany({ where: { role: "ADMIN", disabledAt: null, email: { not: null } }, select: { email: true } });
     const to = admins.map((a) => a.email!).filter(Boolean);
     if (to.length) await sendMail(accessRequestEmail({ to, name, email, message }));
+    await notifyAdmins({
+      type: NOTIFICATION_TYPES.ACCESS_REQUEST,
+      key: `ACCESS_REQUEST:${email}`,
+      title: `Access request: ${name}`,
+      body: email,
+      link: "/invites",
+    });
   }
 
   return NextResponse.json({ ok: true });

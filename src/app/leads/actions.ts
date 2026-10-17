@@ -6,6 +6,7 @@ import { getSession } from "@/lib/auth";
 import type { DuplicateMatch } from "@/lib/contactTypes";
 import { phoneKey, validateLead, type LeadFormErrors, type LeadFormValues } from "@/lib/leadForm";
 import { prisma } from "@/lib/prisma";
+import { NOTIFICATION_TYPES, notify, statusLabel } from "@/lib/notifications";
 import { findDuplicateContacts, leadTarget, recordCall, recordNote, recordTask, type CallInput, type TaskInput } from "@/lib/records";
 import { leadCode } from "@/lib/status";
 
@@ -97,6 +98,17 @@ export async function createLead(values: LeadFormValues, opts: { allowDuplicate?
     return lead;
   });
 
+  if (owner?.id && owner.id !== me.id) {
+    await notify({
+      userId: owner.id,
+      type: NOTIFICATION_TYPES.LEAD_ASSIGNED,
+      key: `LEAD_ASSIGNED:${lead.id}:${owner.id}`,
+      title: `New lead assigned: ${clean(values.name)}`,
+      body: `Assigned by ${me.name}`,
+      link: `/leads/${lead.id}`,
+    });
+  }
+
   refresh();
   return { ok: true, id: lead.id, code: leadCode(lead.code) };
 }
@@ -147,6 +159,18 @@ export async function updateLead(id: string, values: LeadFormValues): Promise<Up
       ? [prisma.activity.create({ data: { ...target, actorId: me.id, type: ActivityType.OWNER_CHANGED, detail: owner ? `Owner: ${owner.name ?? owner.email}` : "Owner removed" } })]
       : []),
   ]);
+
+  if (ownerId && ownerId !== before.ownerId && ownerId !== me.id) {
+    await notify({
+      userId: ownerId,
+      type: NOTIFICATION_TYPES.LEAD_ASSIGNED,
+      key: `LEAD_ASSIGNED:${id}:${ownerId}`,
+      title: `Lead assigned: ${before.contact.name}`,
+      body: `Assigned by ${me.name}`,
+      link: `/leads/${id}`,
+    });
+  }
+
   refresh();
   return { ok: true };
 }
@@ -156,7 +180,10 @@ export async function setLeadStatus(ids: string[], status: string, lostReason?: 
   const me = await requireUser();
   if (!isStatus(status) || !ids.length) return;
   const reason = status === LeadStatus.LOST ? (lostReason && lostReason in LostReason ? (lostReason as LostReason) : LostReason.OTHER) : null;
-  const leads = await prisma.lead.findMany({ where: { id: { in: ids } }, select: { id: true, contactId: true, status: true } });
+  const leads = await prisma.lead.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, contactId: true, status: true, ownerId: true, contact: { select: { name: true } } },
+  });
   const changed = leads.filter((l) => l.status !== status);
   await prisma.$transaction([
     prisma.lead.updateMany({ where: { id: { in: ids } }, data: { status, lostReason: reason } }),
@@ -171,6 +198,22 @@ export async function setLeadStatus(ids: string[], status: string, lostReason?: 
       })),
     }),
   ]);
+
+  await Promise.all(
+    changed
+      .filter((l) => l.ownerId && l.ownerId !== me.id)
+      .map((l) =>
+        notify({
+          userId: l.ownerId!,
+          type: NOTIFICATION_TYPES.LEAD_STATUS_CHANGED,
+          key: `LEAD_STATUS_CHANGED:${l.id}:${status}`,
+          title: `${l.contact.name} → ${statusLabel(status)}`,
+          body: `Status updated by ${me.name}`,
+          link: `/leads/${l.id}`,
+        }),
+      ),
+  );
+
   refresh();
 }
 
@@ -181,7 +224,7 @@ export async function assignLeads(ids: string[], ownerId: string | null) {
   const owner = ownerId ? await prisma.user.findUnique({ where: { id: ownerId }, select: { id: true, name: true, email: true } }) : null;
   if (ownerId && !owner) throw new Error("Unknown team member");
   const label = owner ? owner.name ?? owner.email ?? "" : "";
-  const leads = await prisma.lead.findMany({ where: { id: { in: ids } }, select: { id: true, contactId: true, ownerId: true } });
+  const leads = await prisma.lead.findMany({ where: { id: { in: ids } }, select: { id: true, contactId: true, ownerId: true, contact: { select: { name: true } } } });
   const changed = leads.filter((l) => l.ownerId !== (owner?.id ?? null));
   await prisma.$transaction([
     prisma.lead.updateMany({ where: { id: { in: ids } }, data: { ownerId: owner?.id ?? null, ownerName: label } }),
@@ -195,6 +238,22 @@ export async function assignLeads(ids: string[], ownerId: string | null) {
       })),
     }),
   ]);
+
+  if (owner?.id && owner.id !== me.id) {
+    await Promise.all(
+      changed.map((l) =>
+        notify({
+          userId: owner.id,
+          type: NOTIFICATION_TYPES.LEAD_ASSIGNED,
+          key: `LEAD_ASSIGNED:${l.id}:${owner.id}`,
+          title: `Lead assigned: ${l.contact.name}`,
+          body: `Assigned by ${me.name}`,
+          link: `/leads/${l.id}`,
+        }),
+      ),
+    );
+  }
+
   refresh();
 }
 

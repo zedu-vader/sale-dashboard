@@ -4,6 +4,7 @@
 import { ActivityType, LegacyCallOutcome, LeadStatus, LostReason, TaskType, type Prisma } from "@prisma/client";
 import type { DuplicateMatch } from "./contactTypes";
 import { phoneKey } from "./leadForm";
+import { NOTIFICATION_TYPES, notify } from "./notifications";
 import { prisma } from "./prisma";
 import { STAGES, contactCode, leadCode } from "./status";
 
@@ -64,10 +65,24 @@ export async function recordTask(meId: string, target: Target, input: TaskInput)
   const dueAt = new Date(input.due);
   if (!input.due || Number.isNaN(dueAt.getTime())) return { ok: false, error: "Pick a due date and time." };
   const type = input.type in TaskType ? (input.type as TaskType) : TaskType.OTHER;
+  const ownerId = input.ownerId || meId;
+  let createdId: string | null = null;
   await prisma.$transaction(async (tx) => {
-    const task = await tx.task.create({ data: { ...target, title: title.slice(0, 200), type, dueAt, ownerId: input.ownerId || meId, userId: meId } });
+    const task = await tx.task.create({ data: { ...target, title: title.slice(0, 200), type, dueAt, ownerId, userId: meId } });
+    createdId = task.id;
     await tx.activity.create({ data: { ...target, actorId: meId, type: ActivityType.TASK_CREATED, taskId: task.id } });
   });
+
+  if (ownerId !== meId && createdId) {
+    await notify({
+      userId: ownerId,
+      type: NOTIFICATION_TYPES.TASK_ASSIGNED,
+      key: `TASK_ASSIGNED:${createdId}:${ownerId}`,
+      title: `Task assigned: ${title.slice(0, 200)}`,
+      link: target.leadId ? `/leads/${target.leadId}` : null,
+    });
+  }
+
   return { ok: true };
 }
 

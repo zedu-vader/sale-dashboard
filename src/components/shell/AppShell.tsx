@@ -34,8 +34,6 @@ type Props = {
   user: User;
   /** Open tasks due today or overdue, shown on the Tasks nav item. */
   openTaskCount: number;
-  /** Shows the red dot on the notifications bell. */
-  unread: boolean;
   /** Pending access requests, shown to admins on Team & invitations. */
   accessRequestCount?: number;
   /** Suppresses action menus when rendering the isolated sample-only Calls preview. */
@@ -69,7 +67,7 @@ const isActive = (href: string, pathname: string) =>
   href !== "#" && (href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`));
 
 /** `active` (a nav label) overrides the URL-based active item. */
-export function AppShell({ user, openTaskCount, unread, accessRequestCount = 0, active, previewMode = false, children }: Props) {
+export function AppShell({ user, openTaskCount, accessRequestCount = 0, active, previewMode = false, children }: Props) {
   const wide = useWideScreen();
   const pathname = usePathname();
   const search = useSearchParams();
@@ -207,7 +205,6 @@ export function AppShell({ user, openTaskCount, unread, accessRequestCount = 0, 
 
       <div className="flex min-w-0 flex-1 flex-col">
         <TopBar
-          unread={unread}
           onToggleSidebar={() => setPinned(!collapsed)}
           onOpenMenu={() => setDrawer(true)}
           search={<GlobalSearch ref={searchRef} />}
