@@ -10,6 +10,7 @@ export async function ContactsShell({ children }: { children: ReactNode }) {
 
   return (
     <AppShell
+      active="Contacts"
       user={{ name, email: session?.user.email, image: session?.user.image }}
       openTaskCount={shell.openTaskCount}
       unread={shell.unread}

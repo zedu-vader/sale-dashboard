@@ -138,7 +138,7 @@ export function AppShell({ user, openTaskCount, unread, active, children }: Prop
           unread={unread}
           onToggleSidebar={() => setPinned(!collapsed)}
           onOpenMenu={() => setDrawer(true)}
-          newMenu={<NewMenu onAddLead={() => router.push("/leads?new=1")} onImport={() => {}} />}
+          newMenu={<NewMenu onAddLead={() => router.push("/leads?new=1")} onImport={() => router.push("/contact-import")} />}
         />
         <main className="min-h-0 flex-1 overflow-y-auto">{children}</main>
       </div>

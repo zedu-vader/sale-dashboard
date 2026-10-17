@@ -60,6 +60,42 @@ Owners are team members (any user who has signed in; the seed adds three sample 
 ZEDU v2 components and tokens live in `src/components/zedu` (see its [README](src/components/zedu/README.md)).
 Browse them at `/design-system` while running `npm run dev`.
 
+## CSV contact import
+
+Active admins and members can open **Contacts → Import CSV** or **New → Import contacts (CSV)**.
+
+1. **Upload:** choose a CSV up to **2 MB / 1,000 records**, or download the template from the import screen.
+2. **Review:** inspect missing/invalid values and duplicates, edit fields, or exclude rows. Use **Show issues only** to focus on problems.
+3. **Confirm:** check the number of ready, invalid, duplicate and excluded records before saving.
+4. **Results:** inspect saved/skipped/failed counts and individual records. Download errors to correct and re-upload; choose **Done** to return to Contacts.
+
+```csv
+Name,Phone,Email,Company
+Example contact,08030000000,contact@example.com,Example company
+```
+
+**Name and Phone are required; Email and Company are optional.** Keep phone numbers as text when editing spreadsheets.
+Matching phone numbers or email addresses flag duplicates within the file and against stored contacts.
+Nigerian local/international phone forms match; email matching ignores case. Excluded rows do not block included records.
+
+Imports create contacts only, skip duplicates and leave existing records unchanged. The UI follows the shared ZEDU design system.
+No new application environment variables, dependencies or database migrations are required.
+
+### CSV verification
+
+```bash
+npm run test:csv
+npx tsc --noEmit
+npm run build
+```
+
+The [CSV import FDD](docs/csv-import.md#verification) explains the opt-in
+`npm run test:csv:integration` checks against an isolated local database and records the checks actually run.
+
+**Limitations:** import history and resumable jobs are not included. Concurrent CSV imports are coordinated;
+simultaneous manual contact creation retains its existing duplicate-handling race.
+See the [FDD](docs/csv-import.md) for validation rules, API behaviour and the local build workaround.
+
 ## Deploy (Coolify)
 
 - Build pack: Dockerfile. The container runs `prisma migrate deploy` on start.
