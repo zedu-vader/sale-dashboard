@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowUpDown, Plus } from "lucide-react";
 import { Button, PageHeader, Search, Tabs } from "@/components/zedu";
@@ -74,6 +74,8 @@ export function TasksBoard({
   const router = useRouter();
   const params = useSearchParams();
   const [tasks, setTasks] = useState<TaskItem[]>(initial);
+  // Tasks created elsewhere (the top-bar New → New task) arrive as fresh server props.
+  useEffect(() => setTasks(initial), [initial]);
 
   const ownerFromParam = useCallback(
     (raw: string | null): TaskOwner | null => {
@@ -147,6 +149,16 @@ export function TasksBoard({
   );
 
   const setTab = (v: TaskTab) => { setTabState(v); syncUrl({ tab: v }); };
+  /** Clears every filter chip and the search in one URL update (owner = everyone, status = any). */
+  const clearAll = () => {
+    setQueryState("");
+    setOwnerState(null);
+    setStatusFilterState("All");
+    setDueFilterState("all");
+    setTypeFilterState("all");
+    syncUrl({ q: "", owner: "", status: "All", due: "all", type: "all" });
+    refresh();
+  };
   const setQuery = (v: string) => { setQueryState(v); syncUrl({ q: v }); };
   const setOwner = (o: TaskOwner | null) => {
     setOwnerState(o);
@@ -266,6 +278,10 @@ export function TasksBoard({
       }))
       .filter((g) => g.rows.length > 0);
   }, [visible, tab, recent, statusFilter]);
+
+  // The Completed tab only lists completed tasks, so the status chip doesn't apply there.
+  const statusApplies = tab !== "completed";
+  const anyFilter = !!owner || (statusApplies && statusFilter !== "All") || dueFilter !== "all" || typeFilter !== "all" || query.trim() !== "";
 
   const isDefaultFilters =
     owner?.key === userId && statusFilter === "Pending" && dueFilter === "all" && typeFilter === "all" && query.trim() === "";
@@ -419,34 +435,36 @@ export function TasksBoard({
               )
             }
           />
-          <Dropdown
-            align="start"
-            trigger={(props) => (
-              <FilterChip
-                label={statusFilter === "All" ? "Status" : `Status: ${statusFilter}`}
-                active={statusFilter !== "All"}
-                onClick={props.onClick}
-                onClear={() => {
-                  setStatusFilter("Pending");
-                  refresh();
-                }}
-              />
-            )}
-          >
-            <Menu label="Filter by status">
-              {(["Pending", "Completed", "All"] as StatusFilter[]).map((s) => (
-                <MenuItem
-                  key={s}
-                  onSelect={() => {
-                    setStatusFilter(s);
+          {statusApplies && (
+            <Dropdown
+              align="start"
+              trigger={(props) => (
+                <FilterChip
+                  label={statusFilter === "All" ? "Status" : `Status: ${statusFilter}`}
+                  active={statusFilter !== "All"}
+                  onClick={props.onClick}
+                  onClear={() => {
+                    setStatusFilter("All");
                     refresh();
                   }}
-                >
-                  {s === "All" ? "All statuses" : s}
-                </MenuItem>
-              ))}
-            </Menu>
-          </Dropdown>
+                />
+              )}
+            >
+              <Menu label="Filter by status">
+                {(["Pending", "Completed", "All"] as StatusFilter[]).map((s) => (
+                  <MenuItem
+                    key={s}
+                    onSelect={() => {
+                      setStatusFilter(s);
+                      refresh();
+                    }}
+                  >
+                    {s === "All" ? "All statuses" : s}
+                  </MenuItem>
+                ))}
+              </Menu>
+            </Dropdown>
+          )}
           <Dropdown
             align="start"
             trigger={(props) => (
@@ -485,20 +503,15 @@ export function TasksBoard({
               ))}
             </Menu>
           </Dropdown>
-          <button
-            type="button"
-            onClick={() => {
-              setQuery("");
-              setOwner({ key: userId, name: userName, initials: initialsOf(userName) });
-              setStatusFilter("Pending");
-              setDueFilter("all");
-              setTypeFilter("all");
-              refresh();
-            }}
-            className="z-focus shrink-0 rounded-z-md px-3 py-1.5 text-z-small font-medium text-z-fg-secondary hover:text-z-fg"
-          >
-            Clear all
-          </button>
+          {anyFilter && (
+            <button
+              type="button"
+              onClick={clearAll}
+              className="z-focus shrink-0 rounded-z-md px-3 py-1.5 text-z-small font-medium text-z-fg-secondary hover:text-z-fg"
+            >
+              Clear all
+            </button>
+          )}
           <span className="min-w-2 flex-1 max-md:hidden" />
           <button
             type="button"
