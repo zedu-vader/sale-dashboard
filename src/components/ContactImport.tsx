@@ -30,7 +30,15 @@ type ImportResult = {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export default function ContactImport() {
+type ContactImportProps = {
+  onClose: () => void;
+  onImported: () => void;
+};
+
+export default function ContactImport({
+  onClose,
+  onImported,
+}: ContactImportProps) {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [fileName, setFileName] = useState("");
   const [message, setMessage] = useState("");
@@ -257,11 +265,16 @@ export default function ContactImport() {
       URL.revokeObjectURL(url);
     }
 
-    setMessage(
-      `Import finished: ${result.created} saved, ${result.duplicates} duplicates skipped, ${result.failed} failed.` +
-      (result.errors.length ? " An error report was downloaded." : "")
-    );
-  }
+   setMessage(
+  `Import finished: ${result.created} saved, ${result.duplicates} duplicates skipped, ${result.failed} failed.` +
+  (result.errors.length ? " An error report was downloaded." : "")
+);
+
+if (result.created > 0) {
+  onImported();
+}
+
+    }
 
   function downloadErrors() {
     const invalidContacts = contacts.filter((contact) => !contact.valid && !contact.excluded);
@@ -292,6 +305,16 @@ export default function ContactImport() {
 
   return (
     <section className="mx-auto w-full max-w-6xl space-y-6">
+      <div className="flex justify-end">
+  <button
+    type="button"
+    onClick={onClose}
+    disabled={isImporting}
+    className="rounded-lg border border-line px-4 py-2"
+  >
+    Close
+  </button>
+</div>
       <header>
         <h1 className="text-h1 max-sm:text-h1-sm">Import Contacts</h1>
         <p className="mt-2 text-body text-ink-muted">
