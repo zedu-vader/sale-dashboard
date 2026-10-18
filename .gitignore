@@ -1,8 +1,9 @@
 node_modules
 .next
 out
-.env
-.env.local
 *.tsbuildinfo
 next-env.d.ts
 /data/tasks.json
+/.local-test/
+/outputs/
+config.bat
