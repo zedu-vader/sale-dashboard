@@ -20,7 +20,7 @@ export async function GET() {
     take: 200,
     include: { invitedBy: { select: { name: true, email: true } } },
   });
-  return NextResponse.json(invites.map((i) => toInviteDTO(i)));
+  return NextResponse.json(invites.map((i) => toInviteDTO(i, { withToken: true })));
 }
 
 export async function POST(req: Request) {

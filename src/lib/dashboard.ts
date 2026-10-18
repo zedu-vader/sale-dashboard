@@ -1,8 +1,8 @@
-import { CallOutcome, LeadStatus, type Prisma } from "@prisma/client";
+import { CallConnectionStatus, LeadStatus, type Prisma } from "@prisma/client";
 import { formatDay, formatRange, formatTime } from "./format";
 import { prisma } from "./prisma";
 import { RANGE_PRESETS, resolveRange, type RangeKey } from "./range";
-import { CALL_OUTCOMES } from "./status";
+import { CALL_OUTCOMES, LEGACY_CALL_OUTCOMES } from "./status";
 
 const ACTIVITY_LIMIT = 8;
 const UPCOMING_DAYS = 7;
@@ -59,20 +59,27 @@ export async function getDashboardData(rangeKey: RangeKey): Promise<DashboardDat
     prisma.lead.count({ where: { createdAt: cur } }),
     prisma.call.count({ where: { calledAt: cur } }),
     // Every call that was picked up, whatever the result. Connected + unanswered = calls made.
-    prisma.call.count({ where: { calledAt: cur, outcome: { not: CallOutcome.NO_ANSWER } } }),
-    prisma.call.count({ where: { calledAt: cur, outcome: CallOutcome.NO_ANSWER } }),
+    prisma.call.count({ where: { calledAt: cur, connectionStatus: CallConnectionStatus.CONNECTED } }),
+    prisma.call.count({ where: { calledAt: cur, connectionStatus: CallConnectionStatus.NOT_CONNECTED } }),
     prisma.lead.count({ where: { createdAt: cur, status: LeadStatus.WON } }),
     // A pipeline snapshot, not range-bound: leads currently waiting on a follow-up.
     prisma.lead.count({ where: { status: LeadStatus.FOLLOW_UP } }),
     prisma.call.findMany({
       orderBy: { calledAt: "desc" },
       take: ACTIVITY_LIMIT,
-      select: { id: true, outcome: true, calledAt: true, lead: { select: { name: true, status: true } } },
+      select: {
+        id: true,
+        outcome: true,
+        legacyOutcome: true,
+        calledAt: true,
+        contact: { select: { name: true } },
+        lead: { select: { status: true, contact: { select: { name: true } } } },
+      },
     }),
     prisma.lead.findMany({
       orderBy: { createdAt: "desc" },
       take: ACTIVITY_LIMIT,
-      select: { id: true, name: true, status: true, createdAt: true },
+      select: { id: true, status: true, createdAt: true, contact: { select: { name: true } } },
     }),
     prisma.task.findMany({
       where: {
@@ -86,15 +93,15 @@ export async function getDashboardData(rangeKey: RangeKey): Promise<DashboardDat
     ...recentCalls.map((c) => ({
       id: `call-${c.id}`,
       kind: "call" as const,
-      name: c.lead?.name ?? "Unknown lead",
-      detail: `Call · ${CALL_OUTCOMES[c.outcome]}`,
+      name: c.contact?.name ?? c.lead?.contact.name ?? "Unknown contact",
+      detail: `Call · ${c.legacyOutcome ? LEGACY_CALL_OUTCOMES[c.legacyOutcome] : CALL_OUTCOMES[c.outcome]}`,
       status: c.lead?.status ?? null,
       date: c.calledAt,
     })),
     ...recentLeads.map((l) => ({
       id: `lead-${l.id}`,
       kind: "lead" as const,
-      name: l.name,
+      name: l.contact.name,
       detail: "New lead",
       status: l.status,
       date: l.createdAt,

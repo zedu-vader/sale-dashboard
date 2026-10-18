@@ -76,6 +76,8 @@ export type TimelineEntry = {
 export type LeadProfile = {
   id: string;
   code: string;
+  /** The contact this lead's name, phone, email, company and type come from. */
+  contact: { id: string; code: string };
   name: string;
   phone: string;
   email: string | null;

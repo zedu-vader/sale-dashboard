@@ -29,7 +29,7 @@ export default async function LeadPage({ params, searchParams }: Props) {
   const tab = TABS.find((t) => t === searchParams.tab) ?? "activity";
 
   return (
-    <AppShell user={{ name, email: session.user.email, image: session.user.image }} {...shell}>
+    <AppShell user={{ name, email: session.user.email, image: session.user.image, role: session.user.role }} {...shell}>
       <LeadProfileView lead={lead} team={team} me={{ name }} initialTab={tab} initialEdit={searchParams.edit === "1"} />
     </AppShell>
   );

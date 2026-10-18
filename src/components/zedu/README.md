@@ -82,7 +82,7 @@ They are defined in [`tokens.css`](./tokens.css) and map 1:1 to the Figma variab
 | Logo, Workspace switcher, User trigger, Notifications button | `Logo`, `WorkspaceSwitcher`, `UserTrigger`, `NotificationsButton` | |
 | Top bar, Page header | `TopBar`, `PageHeader` | `TopBar` is responsive (desktop / mobile variants) and focuses search on ⌘K. `PageHeader` takes `actions` and `tabs`. |
 | Select, Textarea | `Select`, `DateField`, `Textarea` | Same frame as `Input` (label, icon, helper/error). `Select` is a native select; `DateField` adds the "Pick a date" placeholder. |
-| Alert | `Alert`, `AlertAction` | `tone` warning · danger · info, optional `actions` (text buttons). Danger is announced as an alert. |
+| Alert | `Alert`, `AlertAction` | `tone` warning · danger · info (blue `bg-z-info-subtle` / `text-z-fg-info` with the Info icon), optional `actions` (text buttons). Danger is announced as an alert. |
 | Filter chip | `FilterChip` | Default (dashed "+ Field") or `active` ("Field: value" with clear). |
 | Due label, Task type, Task status | `DueLabel`, `TaskTypeTag`, `TaskStatus` | `due` overdue · today · upcoming · done · none. Overdue is derived, so `TaskStatus` is only Pending / Completed. |
 | Lead type, Detail row | `LeadTypeLabel`, `DetailRow` | Individual (indigo dot) / Business (orange dot). `DetailRow` goes inside a `<dl>`. |

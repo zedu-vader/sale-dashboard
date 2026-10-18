@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Copy, Mail } from "lucide-react";
+import { Check, Copy, Link2, Mail } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { FormError } from "@/components/auth/FormError";
 import { useAuthRequest } from "@/components/auth/useAuthRequest";
@@ -30,14 +30,14 @@ export function InviteModal({ open, onClose, onCreated, initialEmail = "" }: Pro
   const [email, setEmail] = useState(initialEmail);
   const [role, setRole] = useState<Role>("MEMBER");
   const [created, setCreated] = useState<Created | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<"code" | "link" | null>(null);
 
   useEffect(() => {
     if (open) {
       setEmail(initialEmail);
       setRole("MEMBER");
       setCreated(null);
-      setCopied(false);
+      setCopied(null);
       setError(null);
     }
   }, [open, initialEmail, setError]);
@@ -51,11 +51,12 @@ export function InviteModal({ open, onClose, onCreated, initialEmail = "" }: Pro
     }
   }
 
-  async function copy() {
+  async function copy(what: "code" | "link") {
     if (!created?.invite.token) return;
+    const text = what === "code" ? created.invite.token : `${window.location.origin}/setup?token=${encodeURIComponent(created.invite.token)}`;
     try {
-      await navigator.clipboard.writeText(created.invite.token);
-      setCopied(true);
+      await navigator.clipboard.writeText(text);
+      setCopied(what);
     } catch {}
   }
 
@@ -75,9 +76,14 @@ export function InviteModal({ open, onClose, onCreated, initialEmail = "" }: Pro
           </p>
           <div className="flex items-center justify-between gap-3 rounded-z-md bg-z-sunken px-4 py-3">
             <span className="font-mono text-z-section tracking-[0.2em] text-z-fg">{created.invite.token}</span>
-            <Button variant="secondary" size="sm" icon={copied ? <Check aria-hidden /> : <Copy aria-hidden />} onClick={copy}>
-              {copied ? "Copied" : "Copy"}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="secondary" size="sm" icon={copied === "link" ? <Check aria-hidden /> : <Link2 aria-hidden />} onClick={() => copy("link")}>
+                {copied === "link" ? "Copied" : "Copy link"}
+              </Button>
+              <Button variant="secondary" size="sm" icon={copied === "code" ? <Check aria-hidden /> : <Copy aria-hidden />} onClick={() => copy("code")}>
+                {copied === "code" ? "Copied" : "Copy code"}
+              </Button>
+            </div>
           </div>
           <div className="flex justify-end">
             <Button onClick={onClose}>Done</Button>
