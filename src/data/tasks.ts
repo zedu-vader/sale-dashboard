@@ -19,8 +19,8 @@ export interface TaskItem {
   description: string;
   type: TaskType;
   recordName: string;
-  /** Lead, or Internal for team-only records. */
-  recordKind: "Lead" | "Internal";
+  /** Lead or Contact when the task hangs off a record; Internal for team-only tasks. */
+  recordKind: "Lead" | "Contact" | "Internal";
   /** "From call · Oct 12" — shown when the task was created from a call. */
   fromCall?: string;
   dueText: string;

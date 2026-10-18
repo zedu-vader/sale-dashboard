@@ -31,6 +31,7 @@ type Row = Prisma.TaskGetPayload<{
   include: {
     owner: { select: { id: true; name: true } };
     lead: { select: { id: true; contact: { select: { name: true } } } };
+    contact: { select: { name: true } };
     call: { select: { id: true; calledAt: true; outcome: true; legacyOutcome: true; connectionStatus: true; durationSeconds: true; lead: { select: { contact: { select: { name: true } } } } } };
     user: { select: { name: true } };
   };
@@ -63,8 +64,8 @@ export function toTaskItem(t: Row, now = new Date()): TaskItem {
     title: t.title,
     description: t.description ?? "",
     type: CLIENT_TYPE[t.type],
-    recordName: t.lead?.contact.name ?? "No linked record",
-    recordKind: t.lead ? "Lead" : "Internal",
+    recordName: t.lead?.contact.name ?? t.contact?.name ?? "No linked record",
+    recordKind: t.lead ? "Lead" : t.contact ? "Contact" : "Internal",
     fromCall: t.call ? `From call · ${dayFmt.format(t.call.calledAt)}` : undefined,
     dueText,
     dueTone,
@@ -86,7 +87,7 @@ export function toTaskItem(t: Row, now = new Date()): TaskItem {
     callId: t.callId,
     linkedCall: t.call
       ? {
-          person: t.call.lead?.contact.name ?? t.lead?.contact.name ?? "a lead",
+          person: t.call.lead?.contact.name ?? t.lead?.contact.name ?? t.contact?.name ?? "a lead",
           when: `${dayFmt.format(t.call.calledAt)}, ${timeFmt.format(t.call.calledAt)}`,
           outcome: t.call.legacyOutcome ? LEGACY_CALL_OUTCOMES[t.call.legacyOutcome] : CALL_OUTCOMES[t.call.outcome],
           duration: t.call.durationSeconds === null ? "" : `${Math.round(t.call.durationSeconds / 60)} min`,
@@ -98,8 +99,9 @@ export function toTaskItem(t: Row, now = new Date()): TaskItem {
 
 const taskInclude = {
   owner: { select: { id: true, name: true } },
-  // A lead's name lives on its contact.
+  // A lead's name lives on its contact; tasks can also hang off a contact with no lead.
   lead: { select: { id: true, contact: { select: { name: true } } } },
+  contact: { select: { name: true } },
   call: { select: { id: true, calledAt: true, outcome: true, legacyOutcome: true, connectionStatus: true, durationSeconds: true, lead: { select: { contact: { select: { name: true } } } } } },
   user: { select: { name: true } },
 } as const;

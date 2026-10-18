@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { TaskType } from "@prisma/client";
+import { ActivityType, TaskType } from "@prisma/client";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getTeam } from "@/lib/leads";
@@ -71,20 +71,28 @@ export async function createTask(input: TaskInput): Promise<TaskMutation> {
   if (!dueAt) return { ok: false, error: "A valid due date and time are required" };
   // A task on a lead also belongs to the lead's contact.
   const lead = input.leadId ? await prisma.lead.findUnique({ where: { id: input.leadId }, select: { contactId: true } }) : null;
-  await prisma.task.create({
-    data: {
-      title: title.slice(0, 200),
-      description: input.description?.trim().slice(0, 2000) || null,
-      type,
-      done: false,
-      completedAt: null,
-      dueAt,
-      ownerId: input.ownerId || null,
-      leadId: input.leadId || null,
-      contactId: lead?.contactId ?? null,
-      callId: input.callId || null,
-      userId: me.id,
-    },
+  const leadId = input.leadId || null;
+  const contactId = lead?.contactId ?? null;
+  await prisma.$transaction(async (tx) => {
+    const task = await tx.task.create({
+      data: {
+        title: title.slice(0, 200),
+        description: input.description?.trim().slice(0, 2000) || null,
+        type,
+        done: false,
+        completedAt: null,
+        dueAt,
+        ownerId: input.ownerId || null,
+        leadId,
+        contactId,
+        callId: input.callId || null,
+        userId: me.id,
+      },
+    });
+    // Linked tasks show on the lead/contact timeline; internal tasks have no timeline to show on.
+    if (leadId || contactId) {
+      await tx.activity.create({ data: { leadId, contactId, actorId: me.id, type: ActivityType.TASK_CREATED, taskId: task.id } });
+    }
   });
   refreshTasks();
   return { ok: true };
@@ -98,6 +106,8 @@ export async function updateTask(id: string, input: TaskInput & { done: boolean 
   if (!type) return { ok: false, error: "Invalid task type" };
   const dueAt = toDueAt(input.dueDate, input.dueTime);
   if (!dueAt) return { ok: false, error: "A valid due date and time are required" };
+  const before = await prisma.task.findUnique({ where: { id }, select: { done: true, completedAt: true } });
+  if (!before) return { ok: false, error: "Task not found" };
   await prisma.task.update({
     where: { id },
     data: {
@@ -105,7 +115,8 @@ export async function updateTask(id: string, input: TaskInput & { done: boolean 
       description: input.description?.trim().slice(0, 2000) || null,
       type,
       done: input.done,
-      completedAt: input.done ? new Date() : null,
+      // Keep the original completion time when saving an already-completed task.
+      completedAt: input.done ? before.completedAt ?? new Date() : null,
       dueAt,
       ownerId: input.ownerId || null,
     },
