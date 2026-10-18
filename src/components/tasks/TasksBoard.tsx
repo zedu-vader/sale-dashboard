@@ -389,7 +389,7 @@ export function TasksBoard({
   const ownerLabel = !owner ? "Owner" : owner.key === userId ? "Owner: Me" : owner.key === UNASSIGNED_KEY ? "Owner: Unassigned" : `Owner: ${owner.name}`;
 
   return (
-    <div className="zedu overflow-x-clip">
+    <div className="zedu min-w-0">
       <PageHeader
         title="Tasks"
         description="Follow-ups and activities for you and your team, by due date."
@@ -412,7 +412,7 @@ export function TasksBoard({
       />
 
       <div className="flex flex-col gap-3 px-6 pb-6 pt-4 max-sm:px-4">
-        <div className="flex items-center gap-2 overflow-x-auto pb-0.5 max-md:flex-wrap max-md:overflow-visible">
+        <div className="flex flex-wrap items-center gap-2">
           <Search
             placeholder="Search tasks"
             value={query}

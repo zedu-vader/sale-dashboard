@@ -4,6 +4,7 @@
 
 import { X } from "lucide-react";
 import { useEffect, useId, useRef, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { IconButton } from "./Button";
 import { cx } from "./cx";
 
@@ -47,8 +48,8 @@ type ModalProps = {
 export function Modal({ open, onClose, title, description, footer, width = 720, children }: ModalProps) {
   const ref = useDialog(open, onClose);
   const titleId = useId();
-  if (!open) return null;
-  return (
+  if (!open || typeof document === "undefined") return null;
+  return createPortal(
     <div className="fixed inset-0 z-50 grid place-items-center p-4">
       <div aria-hidden onClick={onClose} className="absolute inset-0 bg-z-inverse/40" />
       <div
@@ -73,10 +74,11 @@ export function Modal({ open, onClose, title, description, footer, width = 720, 
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-5 pt-4 max-sm:px-4">{children}</div>
         {footer && (
-          <div className="flex items-center justify-end gap-2 border-t border-z-line bg-z-subtle px-6 py-4 max-sm:px-4">{footer}</div>
+          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-z-line bg-z-subtle px-6 py-4 max-sm:px-4">{footer}</div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -86,17 +88,19 @@ type SheetProps = {
   /** Overline above the title, e.g. "Lead · LD-1042". */
   eyebrow?: string;
   title: string;
+  /** Actions beside the title, e.g. a "Mark complete" button. */
+  actions?: ReactNode;
   /** Footer row: a hint on the left, buttons on the right. */
   footer?: ReactNode;
   children: ReactNode;
 };
 
 /** 460px panel docked to the right edge below the top bar. The page behind stays visible. */
-export function Sheet({ open, onClose, eyebrow, title, footer, children }: SheetProps) {
+export function Sheet({ open, onClose, eyebrow, title, actions, footer, children }: SheetProps) {
   const ref = useDialog(open, onClose);
   const titleId = useId();
-  if (!open) return null;
-  return (
+  if (!open || typeof document === "undefined") return null;
+  return createPortal(
     <div
       ref={ref}
       role="dialog"
@@ -110,16 +114,18 @@ export function Sheet({ open, onClose, eyebrow, title, footer, children }: Sheet
       <div className="flex items-center gap-2 border-b border-z-line py-4 pl-5 pr-3">
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           {eyebrow && <p className="z-overline text-z-fg-muted">{eyebrow}</p>}
-          <h2 id={titleId} className="text-z-section text-z-fg">
+          <h2 id={titleId} className="truncate text-z-section text-z-fg">
             {title}
           </h2>
         </div>
+        {actions}
         <IconButton label="Close" onClick={onClose}>
           <X aria-hidden />
         </IconButton>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto p-5">{children}</div>
-      {footer && <div className="flex items-center gap-2 border-t border-z-line px-5 py-3">{footer}</div>}
-    </div>
+      {footer && <div className="flex flex-wrap items-center gap-2 border-t border-z-line px-5 py-3">{footer}</div>}
+    </div>,
+    document.body,
   );
 }
