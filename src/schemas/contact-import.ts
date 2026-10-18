@@ -1,3 +1,5 @@
+import { phoneKey, validateLead } from "@/lib/leadForm";
+
 export const MAX_IMPORT_BYTES = 2 * 1024 * 1024;
 export const MAX_IMPORT_ROWS = 1000;
 export const MAX_IMPORT_REQUEST_BYTES = 4 * 1024 * 1024;
@@ -18,13 +20,9 @@ export type ImportReport = {
 };
 export type ContactImportValidation =
   { valid: true; value: ContactImportRow } | { valid: false; error: string };
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /** Matches the contacts directory's local Nigerian/international phone policy. */
-export function importPhoneKey(phone: string) {
-  const digits = phone.replace(/\D/g, "");
-  return digits.startsWith("0") ? `234${digits.slice(1)}` : digits;
-}
+export const importPhoneKey = phoneKey;
 
 export function validateContactImportRow(
   input: unknown,
@@ -38,20 +36,12 @@ export function validateContactImportRow(
       typeof source[field] === "string" ? source[field].trim() : "",
     ]),
   ) as ContactImportRow;
-  if (!value.name) return { valid: false, error: "Name is required." };
-  if (value.name.length > 200)
-    return { valid: false, error: "Name must not exceed 200 characters." };
-  if (!value.phone) return { valid: false, error: "Phone number is required." };
-  if (value.phone.replace(/\D/g, "").length < 7)
-    return { valid: false, error: "Phone must contain at least 7 digits." };
+  const error = Object.values(validateLead(value, "contact"))[0];
+  if (error) return { valid: false, error };
   if (value.phone.length > 40)
     return { valid: false, error: "Phone must not exceed 40 characters." };
-  if (value.email && !EMAIL_RE.test(value.email))
-    return { valid: false, error: "Enter a valid email address." };
   if (value.email.length > 200)
     return { valid: false, error: "Email must not exceed 200 characters." };
-  if (value.company.length > 200)
-    return { valid: false, error: "Company must not exceed 200 characters." };
   return { valid: true, value };
 }
 

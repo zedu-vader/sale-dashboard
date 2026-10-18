@@ -6,6 +6,7 @@ import {
   ArrowUpDown,
   CircleAlert,
   CircleCheck,
+  Info,
   Clock,
   Mail,
   MessageSquare,
@@ -25,9 +26,9 @@ import { cx } from "./cx";
 /* ---------------------------------------------------------------------------------------------- */
 
 const alertTone = {
-  danger: { box: "bg-z-danger-subtle", title: "text-z-fg-danger" },
-  warning: { box: "bg-z-warning-subtle", title: "text-z-fg-warning" },
-  info: { box: "bg-z-selected", title: "text-z-fg-accent" },
+  danger: { box: "bg-z-danger-subtle", title: "text-z-fg-danger", icon: CircleAlert },
+  warning: { box: "bg-z-warning-subtle", title: "text-z-fg-warning", icon: CircleAlert },
+  info: { box: "bg-z-info-subtle", title: "text-z-fg-info", icon: Info },
 };
 
 type AlertProps = {
@@ -47,7 +48,7 @@ export function Alert({ tone = "warning", title, children, actions, className }:
       role={tone === "danger" ? "alert" : "status"}
       className={cx("flex items-start gap-2.5 rounded-z-md p-3", t.box, className)}
     >
-      <CircleAlert aria-hidden className={cx("mt-0.5 size-4 shrink-0", t.title)} />
+      <t.icon aria-hidden className={cx("mt-0.5 size-4 shrink-0", t.title)} />
       <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-z-small">
         <p className={cx("font-medium", t.title)}>{title}</p>
         {children && <div className="font-normal text-z-fg-secondary">{children}</div>}

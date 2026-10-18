@@ -666,7 +666,7 @@ function AppShellDemo() {
           )}
         </Sidebar>
         <div className="flex min-w-0 flex-1 flex-col bg-z-surface">
-          <TopBar unread onToggleSidebar={() => setCollapsed((c) => !c)} newMenu={<NewMenu onImport={admin ? () => {} : undefined} />} />
+          <TopBar onToggleSidebar={() => setCollapsed((c) => !c)} newMenu={<NewMenu onImport={admin ? () => {} : undefined} />} />
           <PageHeader
             title={page}
             count={page === "Leads" ? 248 : undefined}

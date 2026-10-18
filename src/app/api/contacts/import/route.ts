@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { sameOrigin } from "@/lib/auth/http";
-import { prisma } from "@/lib/prisma";
 import {
   commitContactImport,
   previewContactImport,
@@ -42,18 +41,15 @@ export async function POST(req: Request) {
       { error: "Cross-site import requests are not allowed." },
       { status: 403 },
     );
-  const session = await getSession();
-  if (!session)
-    return NextResponse.json(
-      { error: "Sign in to import contacts." },
-      { status: 401 },
-    );
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { role: true, disabledAt: true },
-    });
-    if (!user || user.disabledAt || !["ADMIN", "MEMBER"].includes(user.role))
+    // Upstream sessions recheck the account's active state and current role.
+    const session = await getSession();
+    if (!session)
+      return NextResponse.json(
+        { error: "Sign in to import contacts." },
+        { status: 401 },
+      );
+    if (!["ADMIN", "MEMBER"].includes(session.user.role))
       return NextResponse.json(
         { error: "You do not have permission to import contacts." },
         { status: 403 },
@@ -82,7 +78,7 @@ export async function POST(req: Request) {
     const report =
       mode === "preview"
         ? await previewContactImport(rows)
-        : await commitContactImport(rows);
+        : await commitContactImport(rows, session.user.id);
     return NextResponse.json(report, {
       headers: { "Cache-Control": "no-store" },
     });
