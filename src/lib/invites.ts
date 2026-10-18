@@ -14,7 +14,7 @@ export const INVITE_TTL_DAYS = 7;
 
 export type InviteStatus = "PENDING" | "ACCEPTED" | "EXPIRED" | "REVOKED";
 
-/** Shape returned by /api/invites. The code itself is only included in the response to creating an invite. */
+/** Shape returned by /api/invites. The code is included for open (pending) invites, to admins only. */
 export type InviteDTO = {
   id: string;
   email: string | null;

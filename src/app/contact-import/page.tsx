@@ -1,20 +1,19 @@
-"use client";
+import { redirect } from "next/navigation";
+import { getSession } from "@/lib/auth";
+import { getShellCounts } from "@/lib/shell";
+import { AppShell } from "@/components/shell/AppShell";
+import { ContactImportScreen } from "@/components/contacts/ContactImportScreen";
 
-import { useRouter } from "next/navigation";
-import ContactImport from "@/components/ContactImport";
+export const metadata = { title: "Import contacts" };
+export const dynamic = "force-dynamic";
 
-export default function ContactImportPage() {
-  const router = useRouter();
-
-  function refreshContacts() {
-    router.push("/contacts");
-    router.refresh();
-  }
-
+export default async function ContactImportPage() {
+  const session = await getSession();
+  if (!session) redirect("/login");
+  const shell = await getShellCounts();
   return (
-    <ContactImport
-      onClose={() => router.push("/contacts")}
-      onImported={refreshContacts}
-    />
+    <AppShell user={session.user} {...shell} active="Contacts">
+      <ContactImportScreen />
+    </AppShell>
   );
 }

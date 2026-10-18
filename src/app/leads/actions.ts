@@ -1,11 +1,16 @@
 "use server";
 
-import { ActivityType, CallOutcome, LeadStatus, LeadType, LostReason, TaskType, type Prisma } from "@prisma/client";
+import { ActivityType, LeadStatus, LeadType, LostReason, TaskType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth";
-import { phoneDigits, validateLead, type LeadFormErrors, type LeadFormValues } from "@/lib/leadForm";
+import type { DuplicateMatch } from "@/lib/contactTypes";
+import { phoneKey, validateLead, type LeadFormErrors, type LeadFormValues } from "@/lib/leadForm";
 import { prisma } from "@/lib/prisma";
-import { STAGES, leadCode } from "@/lib/status";
+import { NOTIFICATION_TYPES, notify, statusLabel } from "@/lib/notifications";
+import { findDuplicateContacts, leadTarget, recordCall, recordNote, recordTask, type CallInput, type TaskInput } from "@/lib/records";
+import { leadCode } from "@/lib/status";
+
+export type { CallInput, TaskInput };
 
 async function requireUser() {
   const session = await getSession();
@@ -14,47 +19,32 @@ async function requireUser() {
 }
 
 function refresh() {
-  // Leads show up on the dashboard, the list and the profile, so refresh them all.
+  // Leads show up on the dashboard, the lists and the profiles, so refresh them all.
   revalidatePath("/", "layout");
 }
 
 const isStatus = (s: string): s is LeadStatus => s in LeadStatus;
 const clean = (s: string | undefined) => (s ?? "").trim();
 
-export type Duplicate = { id: string; code: string; name: string; owner: string | null };
-
-/** Leads that already use this phone number (compared on the last 10 digits, whatever the formatting). */
-async function findDuplicates(phone: string, excludeId?: string): Promise<Duplicate[]> {
-  const digits = phoneDigits(phone).slice(-10);
-  if (digits.length < 7) return [];
-  const rows = await prisma.$queryRaw<{ id: string; code: number; name: string; owner: string | null }[]>`
-    SELECT l."id", l."code", l."name", COALESCE(u."name", u."email") AS owner
-    FROM "Lead" l LEFT JOIN "User" u ON u."id" = l."ownerId"
-    WHERE regexp_replace(l."phone", '[^0-9]', '', 'g') LIKE ${"%" + digits}
-      AND (${excludeId ?? ""} = '' OR l."id" <> ${excludeId ?? ""})
-    ORDER BY l."createdAt" ASC
-    LIMIT 3`;
-  return rows.map((r) => ({ id: r.id, code: leadCode(r.code), name: r.name, owner: r.owner }));
-}
-
 /** Called when the phone field loses focus in Add lead. */
-export async function checkDuplicatePhone(phone: string): Promise<Duplicate | null> {
+export async function checkDuplicatePhone(phone: string): Promise<DuplicateMatch | null> {
   await requireUser();
-  return (await findDuplicates(phone))[0] ?? null;
+  return (await findDuplicateContacts(phone, undefined, 1))[0] ?? null;
 }
 
 export type CreateLeadResult =
   | { ok: true; id: string; code: string }
   | { ok: false; errors: LeadFormErrors; duplicate?: undefined }
-  | { ok: false; errors?: undefined; duplicate: Duplicate };
+  | { ok: false; errors?: undefined; duplicate: DuplicateMatch };
 
+/** Add lead: creates the contact (name, phone, email, company, type) and its first lead. */
 export async function createLead(values: LeadFormValues, opts: { allowDuplicate?: boolean } = {}): Promise<CreateLeadResult> {
   const me = await requireUser();
   const errors = validateLead(values);
   if (Object.keys(errors).length) return { ok: false, errors };
 
   if (!opts.allowDuplicate) {
-    const [duplicate] = await findDuplicates(values.phone);
+    const [duplicate] = await findDuplicateContacts(values.phone, undefined, 1);
     if (duplicate) return { ok: false, duplicate };
   }
 
@@ -65,33 +55,59 @@ export async function createLead(values: LeadFormValues, opts: { allowDuplicate?
   const notes = clean(values.notes);
 
   const lead = await prisma.$transaction(async (tx) => {
-    const lead = await tx.lead.create({
+    // Explicit times keep "created this contact" below "created lead" in the contact timeline.
+    const now = new Date();
+    const contact = await tx.contact.create({
       data: {
         name: clean(values.name),
         phone: clean(values.phone),
+        phoneKey: phoneKey(values.phone),
         email: clean(values.email) || null,
         company: clean(values.company) || null,
         type: values.type === "BUSINESS" ? LeadType.BUSINESS : LeadType.INDIVIDUAL,
+        createdById: me.id,
+      },
+    });
+    const lead = await tx.lead.create({
+      data: {
+        contactId: contact.id,
         status,
         lostReason: status === LeadStatus.LOST ? LostReason.OTHER : null,
         ownerId: owner?.id ?? null,
         ownerName: owner ? ownerLabel : "",
         createdById: me.id,
-        activities: { create: { type: ActivityType.CREATED, actorId: me.id, toStatus: status, detail: `Added manually · Owner: ${ownerLabel}` } },
       },
     });
+    const target = { contactId: contact.id, leadId: lead.id };
+    await tx.activity.create({
+      data: { contactId: contact.id, actorId: me.id, type: ActivityType.CONTACT_CREATED, detail: `Added manually · Lead ${leadCode(lead.code)} created from this contact`, createdAt: now },
+    });
+    await tx.activity.create({
+      data: { ...target, actorId: me.id, type: ActivityType.CREATED, toStatus: status, detail: `Added manually · Owner: ${ownerLabel}`, createdAt: new Date(now.getTime() + 1) },
+    });
     if (notes) {
-      const note = await tx.note.create({ data: { leadId: lead.id, authorId: me.id, body: notes } });
-      await tx.activity.create({ data: { leadId: lead.id, actorId: me.id, type: ActivityType.NOTE_ADDED, noteId: note.id } });
+      const note = await tx.note.create({ data: { ...target, authorId: me.id, body: notes } });
+      await tx.activity.create({ data: { ...target, actorId: me.id, type: ActivityType.NOTE_ADDED, noteId: note.id } });
     }
     if (followUp) {
       const task = await tx.task.create({
-        data: { title: "Follow up", type: TaskType.FOLLOW_UP, dueAt: followUp, leadId: lead.id, userId: owner?.id ?? me.id },
+        data: { ...target, title: "Follow up", type: TaskType.FOLLOW_UP, dueAt: followUp, ownerId: owner?.id ?? me.id, userId: me.id },
       });
-      await tx.activity.create({ data: { leadId: lead.id, actorId: me.id, type: ActivityType.TASK_CREATED, taskId: task.id } });
+      await tx.activity.create({ data: { ...target, actorId: me.id, type: ActivityType.TASK_CREATED, taskId: task.id } });
     }
     return lead;
   });
+
+  if (owner?.id && owner.id !== me.id) {
+    await notify({
+      userId: owner.id,
+      type: NOTIFICATION_TYPES.LEAD_ASSIGNED,
+      key: `LEAD_ASSIGNED:${lead.id}:${owner.id}`,
+      title: `New lead assigned: ${clean(values.name)}`,
+      body: `Assigned by ${me.name}`,
+      link: `/leads/${lead.id}`,
+    });
+  }
 
   refresh();
   return { ok: true, id: lead.id, code: leadCode(lead.code) };
@@ -99,15 +115,17 @@ export async function createLead(values: LeadFormValues, opts: { allowDuplicate?
 
 export type UpdateLeadResult = { ok: true } | { ok: false; errors: LeadFormErrors };
 
+/** Edit details: name, phone, email, company and type are saved on the contact; status and owner on the lead. */
 export async function updateLead(id: string, values: LeadFormValues): Promise<UpdateLeadResult> {
   const me = await requireUser();
   const errors = validateLead(values);
   if (Object.keys(errors).length) return { ok: false, errors };
 
-  const before = await prisma.lead.findUniqueOrThrow({ where: { id } });
+  const before = await prisma.lead.findUniqueOrThrow({ where: { id }, include: { contact: true } });
   const status = isStatus(values.status) ? values.status : before.status;
   const ownerId = values.ownerId || null;
   const owner = ownerId ? await prisma.user.findUnique({ where: { id: ownerId }, select: { name: true, email: true } }) : null;
+  const target = { leadId: id, contactId: before.contactId };
 
   const data = {
     name: clean(values.name),
@@ -116,27 +134,43 @@ export async function updateLead(id: string, values: LeadFormValues): Promise<Up
     company: clean(values.company) || null,
     type: values.type === "BUSINESS" ? LeadType.BUSINESS : LeadType.INDIVIDUAL,
   };
-  const detailsChanged = (Object.keys(data) as (keyof typeof data)[]).some((k) => data[k] !== before[k]);
+  const detailsChanged = (Object.keys(data) as (keyof typeof data)[]).some((k) => data[k] !== before.contact[k]);
 
   await prisma.$transaction([
+    ...(detailsChanged
+      ? [
+          prisma.contact.update({ where: { id: before.contactId }, data: { ...data, phoneKey: phoneKey(data.phone) } }),
+          prisma.activity.create({ data: { ...target, actorId: me.id, type: ActivityType.DETAILS_UPDATED } }),
+        ]
+      : []),
     prisma.lead.update({
       where: { id },
       data: {
-        ...data,
         status,
         lostReason: status === LeadStatus.LOST ? before.lostReason ?? LostReason.OTHER : null,
         ownerId,
         ownerName: owner ? owner.name ?? owner.email ?? "" : "",
       },
     }),
-    ...(detailsChanged ? [prisma.activity.create({ data: { leadId: id, actorId: me.id, type: ActivityType.DETAILS_UPDATED } })] : []),
     ...(status !== before.status
-      ? [prisma.activity.create({ data: { leadId: id, actorId: me.id, type: ActivityType.STATUS_CHANGED, fromStatus: before.status, toStatus: status } })]
+      ? [prisma.activity.create({ data: { ...target, actorId: me.id, type: ActivityType.STATUS_CHANGED, fromStatus: before.status, toStatus: status } })]
       : []),
     ...(ownerId !== before.ownerId
-      ? [prisma.activity.create({ data: { leadId: id, actorId: me.id, type: ActivityType.OWNER_CHANGED, detail: owner ? `Owner: ${owner.name ?? owner.email}` : "Owner removed" } })]
+      ? [prisma.activity.create({ data: { ...target, actorId: me.id, type: ActivityType.OWNER_CHANGED, detail: owner ? `Owner: ${owner.name ?? owner.email}` : "Owner removed" } })]
       : []),
   ]);
+
+  if (ownerId && ownerId !== before.ownerId && ownerId !== me.id) {
+    await notify({
+      userId: ownerId,
+      type: NOTIFICATION_TYPES.LEAD_ASSIGNED,
+      key: `LEAD_ASSIGNED:${id}:${ownerId}`,
+      title: `Lead assigned: ${before.contact.name}`,
+      body: `Assigned by ${me.name}`,
+      link: `/leads/${id}`,
+    });
+  }
+
   refresh();
   return { ok: true };
 }
@@ -146,14 +180,40 @@ export async function setLeadStatus(ids: string[], status: string, lostReason?: 
   const me = await requireUser();
   if (!isStatus(status) || !ids.length) return;
   const reason = status === LeadStatus.LOST ? (lostReason && lostReason in LostReason ? (lostReason as LostReason) : LostReason.OTHER) : null;
-  const leads = await prisma.lead.findMany({ where: { id: { in: ids } }, select: { id: true, status: true } });
+  const leads = await prisma.lead.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, contactId: true, status: true, ownerId: true, contact: { select: { name: true } } },
+  });
   const changed = leads.filter((l) => l.status !== status);
   await prisma.$transaction([
     prisma.lead.updateMany({ where: { id: { in: ids } }, data: { status, lostReason: reason } }),
     prisma.activity.createMany({
-      data: changed.map((l) => ({ leadId: l.id, actorId: me.id, type: ActivityType.STATUS_CHANGED, fromStatus: l.status, toStatus: status })),
+      data: changed.map((l) => ({
+        leadId: l.id,
+        contactId: l.contactId,
+        actorId: me.id,
+        type: ActivityType.STATUS_CHANGED,
+        fromStatus: l.status,
+        toStatus: status,
+      })),
     }),
   ]);
+
+  await Promise.all(
+    changed
+      .filter((l) => l.ownerId && l.ownerId !== me.id)
+      .map((l) =>
+        notify({
+          userId: l.ownerId!,
+          type: NOTIFICATION_TYPES.LEAD_STATUS_CHANGED,
+          key: `LEAD_STATUS_CHANGED:${l.id}:${status}`,
+          title: `${l.contact.name} → ${statusLabel(status)}`,
+          body: `Status updated by ${me.name}`,
+          link: `/leads/${l.id}`,
+        }),
+      ),
+  );
+
   refresh();
 }
 
@@ -164,17 +224,40 @@ export async function assignLeads(ids: string[], ownerId: string | null) {
   const owner = ownerId ? await prisma.user.findUnique({ where: { id: ownerId }, select: { id: true, name: true, email: true } }) : null;
   if (ownerId && !owner) throw new Error("Unknown team member");
   const label = owner ? owner.name ?? owner.email ?? "" : "";
-  const leads = await prisma.lead.findMany({ where: { id: { in: ids } }, select: { id: true, ownerId: true } });
+  const leads = await prisma.lead.findMany({ where: { id: { in: ids } }, select: { id: true, contactId: true, ownerId: true, contact: { select: { name: true } } } });
   const changed = leads.filter((l) => l.ownerId !== (owner?.id ?? null));
   await prisma.$transaction([
     prisma.lead.updateMany({ where: { id: { in: ids } }, data: { ownerId: owner?.id ?? null, ownerName: label } }),
     prisma.activity.createMany({
-      data: changed.map((l) => ({ leadId: l.id, actorId: me.id, type: ActivityType.OWNER_CHANGED, detail: owner ? `Owner: ${label}` : "Owner removed" })),
+      data: changed.map((l) => ({
+        leadId: l.id,
+        contactId: l.contactId,
+        actorId: me.id,
+        type: ActivityType.OWNER_CHANGED,
+        detail: owner ? `Owner: ${label}` : "Owner removed",
+      })),
     }),
   ]);
+
+  if (owner?.id && owner.id !== me.id) {
+    await Promise.all(
+      changed.map((l) =>
+        notify({
+          userId: owner.id,
+          type: NOTIFICATION_TYPES.LEAD_ASSIGNED,
+          key: `LEAD_ASSIGNED:${l.id}:${owner.id}`,
+          title: `Lead assigned: ${l.contact.name}`,
+          body: `Assigned by ${me.name}`,
+          link: `/leads/${l.id}`,
+        }),
+      ),
+    );
+  }
+
   refresh();
 }
 
+/** Deletes the leads only; their contacts (and the contacts' own history) stay. */
 export async function deleteLeads(ids: string[]) {
   await requireUser();
   if (!ids.length) return;
@@ -184,72 +267,21 @@ export async function deleteLeads(ids: string[]) {
 
 export async function addNote(leadId: string, body: string) {
   const me = await requireUser();
-  const text = body.trim();
-  if (!text) return;
-  await prisma.$transaction(async (tx) => {
-    const note = await tx.note.create({ data: { leadId, authorId: me.id, body: text.slice(0, 5000) } });
-    await tx.activity.create({ data: { leadId, actorId: me.id, type: ActivityType.NOTE_ADDED, noteId: note.id } });
-  });
+  await recordNote(me.id, await leadTarget(leadId), body);
   refresh();
 }
 
-export type TaskInput = { title: string; type: string; due: string; ownerId: string };
-
-export async function createTask(leadId: string, input: TaskInput): Promise<{ ok: true } | { ok: false; error: string }> {
+export async function createTask(leadId: string, input: TaskInput) {
   const me = await requireUser();
-  const title = input.title.trim();
-  if (!title) return { ok: false, error: "Enter what needs doing." };
-  const dueAt = new Date(input.due);
-  if (!input.due || Number.isNaN(dueAt.getTime())) return { ok: false, error: "Pick a due date and time." };
-  const type = input.type in TaskType ? (input.type as TaskType) : TaskType.OTHER;
-  await prisma.$transaction(async (tx) => {
-    const task = await tx.task.create({ data: { title: title.slice(0, 200), type, dueAt, leadId, userId: input.ownerId || me.id } });
-    await tx.activity.create({ data: { leadId, actorId: me.id, type: ActivityType.TASK_CREATED, taskId: task.id } });
-  });
-  refresh();
-  return { ok: true };
+  const res = await recordTask(me.id, await leadTarget(leadId), input);
+  if (res.ok) refresh();
+  return res;
 }
 
-export type CallInput = { outcome: string; minutes: string; notes: string; status: string; followUp: string };
-
-/** Logs a call, updates the lead's last interaction, and optionally moves the status and adds a follow-up task. */
-export async function logCall(leadId: string, input: CallInput): Promise<{ ok: true } | { ok: false; error: string }> {
+/** Logs a call, updates the last interaction, and optionally moves the status and adds a follow-up task. */
+export async function logCall(leadId: string, input: CallInput) {
   const me = await requireUser();
-  if (!(input.outcome in CallOutcome)) return { ok: false, error: "Pick how the call went." };
-  const minutes = input.minutes ? Number(input.minutes) : null;
-  if (minutes !== null && (!Number.isFinite(minutes) || minutes < 0 || minutes > 600)) return { ok: false, error: "Enter the duration in minutes (0–600)." };
-  const lead = await prisma.lead.findUniqueOrThrow({ where: { id: leadId }, select: { status: true, ownerId: true } });
-  const status = isStatus(input.status) ? input.status : lead.status;
-  const followUp = input.followUp ? new Date(input.followUp) : null;
-
-  await prisma.$transaction(async (tx) => {
-    const now = new Date();
-    const call = await tx.call.create({
-      data: {
-        leadId,
-        outcome: input.outcome as CallOutcome,
-        durationSec: minutes === null ? null : Math.round(minutes * 60),
-        notes: input.notes.trim().slice(0, 5000) || null,
-        userId: me.id,
-        calledAt: now,
-      },
-    });
-    const ops: Prisma.ActivityCreateManyInput[] = [{ leadId, actorId: me.id, type: ActivityType.CALL_LOGGED, callId: call.id, createdAt: now }];
-    if (status !== lead.status) {
-      ops.push({ leadId, actorId: me.id, type: ActivityType.STATUS_CHANGED, fromStatus: lead.status, toStatus: status, createdAt: new Date(now.getTime() + 1) });
-    }
-    await tx.lead.update({
-      where: { id: leadId },
-      data: { lastInteractionAt: now, status, lostReason: status === LeadStatus.LOST ? LostReason.NOT_INTERESTED : null },
-    });
-    if (followUp && !Number.isNaN(followUp.getTime())) {
-      const task = await tx.task.create({
-        data: { title: `Follow up: ${STAGES[status].label}`, type: TaskType.FOLLOW_UP, dueAt: followUp, leadId, userId: lead.ownerId ?? me.id, callId: call.id },
-      });
-      ops.push({ leadId, actorId: me.id, type: ActivityType.TASK_CREATED, taskId: task.id, createdAt: new Date(now.getTime() + 2) });
-    }
-    await tx.activity.createMany({ data: ops });
-  });
-  refresh();
-  return { ok: true };
+  const res = await recordCall(me.id, await leadTarget(leadId), input);
+  if (res.ok) refresh();
+  return res;
 }
