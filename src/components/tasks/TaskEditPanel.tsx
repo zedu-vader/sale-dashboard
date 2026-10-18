@@ -179,9 +179,6 @@ export function TaskEditPanel({
                 {task.recordName}&apos;s lead record.
               </span>
             </span>
-            <Button variant="secondary" size="sm" className="self-start">
-              View call
-            </Button>
           </div>
         )}
         {task?.createdBy && <p className="text-z-caption font-normal text-z-fg-muted">{task.createdBy}</p>}

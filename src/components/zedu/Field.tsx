@@ -167,7 +167,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(function Che
   return (
     <label
       className={cx(
-        "inline-flex items-center gap-2 text-z-small font-normal text-z-fg-secondary has-[:disabled]:opacity-40",
+        "relative inline-flex items-center gap-2 text-z-small font-normal text-z-fg-secondary has-[:disabled]:opacity-40",
         className,
       )}
     >

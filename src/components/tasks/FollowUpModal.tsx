@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ChevronDown, Clock, Link2 } from "lucide-react";
-import { Button, Checkbox, DateField, FieldLabel, Input, SegmentedControl, Select, Textarea } from "@/components/zedu";
+import { Button, DateField, FieldLabel, Input, SegmentedControl, Select, Textarea } from "@/components/zedu";
 import { Modal } from "@/components/zedu/Overlay";
 import { TASK_TYPES, lagosToday, type TaskType } from "@/data/tasks";
 
@@ -39,7 +39,6 @@ export function FollowUpModal({
   const [dueDate, setDueDate] = useState(lagosToday(1));
   const [dueTime, setDueTime] = useState("09:00");
   const [description, setDescription] = useState("");
-  const [showAsNext, setShowAsNext] = useState(true);
 
   return (
     <Modal
@@ -111,7 +110,6 @@ export function FollowUpModal({
           rows={4}
           placeholder="Asked for pricing for 3 outlets. Include the onboarding timeline."
         />
-        <Checkbox label="Show as the lead's next action" checked={showAsNext} onChange={(e) => setShowAsNext(e.target.checked)} />
       </div>
     </Modal>
   );
